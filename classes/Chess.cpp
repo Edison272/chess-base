@@ -61,13 +61,18 @@ void Chess::FENtoBoard(const std::string& fen) {
     // 3: castling availability (KQkq or -)
     // 4: en passant target square (in algebraic notation, or -)
     // 5: halfmove clock (number of halfmoves since the last capture or pawn advance)
-    int y = 0;
+    int y = _grid->getHeight()-1;
+    int x = 0;
     std::cout << fen.length() << std::endl;
     for (int i = 0; i < fen.length(); i++) {
         char fen_char = fen[i];
-        int x = i % _grid->getWidth();
 
-        std::cout << x << ", " << y << std::endl;
+        // go to next row
+        if (fen_char == '/') {
+            y--;
+            x = 0;
+            continue;
+        }
 
         // create a bit, and assign it to a square at the given x, y
         Bit *bit = new Bit();
@@ -90,12 +95,16 @@ void Chess::FENtoBoard(const std::string& fen) {
             bit->LoadTextureFromFile(fen_char == 'Q' ? "w_queen.png" : "b_queen.png");
         } else if (lower_fen_char == 'k') {
             bit->LoadTextureFromFile(fen_char == 'K' ? "w_king.png" : "b_king.png");
+        } else if (isdigit(fen_char)) { // check for numbers that specify empty spaces in chessboard
+            for (int space = 1; space < fen_char - '0'; space ++) {
+                x += 1;
+            }
         }
+        
+        // move one column to the right after each iteration
+        x += 1;
 
-        if (fen_char == '/') {
-            y++;
-            x = 0;
-        }
+        std::cout << fen_char << " at: " << x << ", " << y << std::endl;
     }
 
 
