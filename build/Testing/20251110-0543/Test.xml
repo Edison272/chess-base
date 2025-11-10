@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="Win32-MSBuild"
+	BuildStamp="20251110-0543-Experimental"
+	Name="DESKTOP-JOQPFRB"
+	Generator="ctest-4.1.2"
+	CompilerName="C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x86/cl.exe"
+	CompilerVersion="19.44.35217.0"
+	OSName="Windows"
+	Hostname="DESKTOP-JOQPFRB"
+	OSRelease=" Personal"
+	OSVersion=" (Build 26100)"
+	OSPlatform="AMD64"
+	Is64Bits="1"
+	VendorString="GenuineIntel"
+	VendorID="Intel Corporation"
+	FamilyID="6"
+	ModelID="14"
+	ModelName=""
+	ProcessorCacheSize="-1"
+	NumberOfLogicalCPU="8"
+	NumberOfPhysicalCPU="4"
+	TotalVirtualMemory="28947"
+	TotalPhysicalMemory="16147"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="1498"
+	>
+	<Testing>
+		<StartDateTime>Nov 09 22:55 Pacific Standard Time</StartDateTime>
+		<StartTestTime>1762757722</StartTestTime>
+		<TestList/>
+		<EndDateTime>Nov 09 22:55 Pacific Standard Time</EndDateTime>
+		<EndTestTime>1762757722</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

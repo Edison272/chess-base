@@ -61,6 +61,44 @@ void Chess::FENtoBoard(const std::string& fen) {
     // 3: castling availability (KQkq or -)
     // 4: en passant target square (in algebraic notation, or -)
     // 5: halfmove clock (number of halfmoves since the last capture or pawn advance)
+    int y = 0;
+    std::cout << fen.length() << std::endl;
+    for (int i = 0; i < fen.length(); i++) {
+        char fen_char = fen[i];
+        int x = i % _grid->getWidth();
+
+        std::cout << x << ", " << y << std::endl;
+
+        // create a bit, and assign it to a square at the given x, y
+        Bit *bit = new Bit();
+        char lower_fen_char = tolower(fen_char);
+        BitHolder* curr_square = _grid->getSquare(x, y);
+        bit->setPosition(curr_square->getPosition());
+        curr_square->setBit(bit);
+
+        // check if character matches a piece
+        // set the correct piece image for the bit
+        if (lower_fen_char == 'p') {
+            bit->LoadTextureFromFile(fen_char == 'P' ? "w_pawn.png" : "b_pawn.png");
+        } else if (lower_fen_char == 'r') {
+            bit->LoadTextureFromFile(fen_char == 'R' ? "w_rook.png" : "b_rook.png");
+        } else if (lower_fen_char == 'n') {
+            bit->LoadTextureFromFile(fen_char == 'N' ? "w_knight.png" : "b_knight.png");
+        } else if (lower_fen_char == 'b') {
+            bit->LoadTextureFromFile(fen_char == 'B' ? "w_bishop.png" : "b_bishop.png");
+        } else if (lower_fen_char == 'q') {
+            bit->LoadTextureFromFile(fen_char == 'Q' ? "w_queen.png" : "b_queen.png");
+        } else if (lower_fen_char == 'k') {
+            bit->LoadTextureFromFile(fen_char == 'K' ? "w_king.png" : "b_king.png");
+        }
+
+        if (fen_char == '/') {
+            y++;
+            x = 0;
+        }
+    }
+
+
 }
 
 bool Chess::actionForEmptyHolder(BitHolder &holder)
