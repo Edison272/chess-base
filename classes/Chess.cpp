@@ -67,9 +67,18 @@ void Chess::FENtoBoard(const std::string& fen) {
     for (int i = 0; i < fen.length(); i++) {
         char fen_char = fen[i];
 
-        // go to next row
-        if (fen_char == '/') {
+        // go to next row when reaching
+        // - '/' for a new row on the board
+        // - ' ' for breaks in notation between castling, enpessant, etc.
+        if (fen_char == '/' || fen_char == ' ') {
             y--;
+            // when y > 0, the function is searching for spaces on the board
+            // when y < 0, the function is searching for castling, enpessant, and other notations
+            // y = -1 | set turn for player
+            // y = -2 | set castling availability for each player
+            // y = -3 | determine enpessant availability
+            // y = -4 | half moves
+            // y = -5 | full moves
             x = 0;
             continue;
         }
@@ -92,16 +101,52 @@ void Chess::FENtoBoard(const std::string& fen) {
         } else if (lower_fen_char == 'b') {
             bit->LoadTextureFromFile(fen_char == 'B' ? "w_bishop.png" : "b_bishop.png");
         } else if (lower_fen_char == 'q') {
-            bit->LoadTextureFromFile(fen_char == 'Q' ? "w_queen.png" : "b_queen.png");
+            // q is notation for queen position AND queen side rotation
+            if (y == -2) {
+                // set castle rules
+            } else {
+                bit->LoadTextureFromFile(fen_char == 'Q' ? "w_queen.png" : "b_queen.png");
+            }
         } else if (lower_fen_char == 'k') {
-            bit->LoadTextureFromFile(fen_char == 'K' ? "w_king.png" : "b_king.png");
-        } else if (isdigit(fen_char)) { // check for numbers that specify empty spaces in chessboard
-            for (int space = 1; space < fen_char - '0'; space ++) {
-                x += 1;
+            // k is notation for king position AND king side rotation
+            if (y == -2) {
+                // set castle rules
+            } else {
+                bit->LoadTextureFromFile(fen_char == 'K' ? "w_king.png" : "b_king.png");
+            }
+        } 
+        // check for numbers 
+        // - can specify empty spaces in chessboard
+        // - can also specify halfmoves and fullmoves
+        else if (isdigit(fen_char)) { 
+            if (y > 0) {
+                for (int space = 1; space < fen_char - '0'; space ++) { // remove one from iteration to accomodate for default space movement
+                    x += 1;
+                }                
+            } else if (y == -4) {
+                // half move
+            } else if (y == -5) {
+                // full move
+            }
+        }
+
+        // check for player turn
+        else if (lower_fen_char == 'w') {  // white to move
+
+        } else if (lower_fen_char == 'b') {  // black to move
+
+        }
+
+        // '-' is used in multiple parts of the fen string. use the negative y value to determine what its for
+        else if (lower_fen_char == '-') {
+            if (y == -2) {
+                // nobody can castle
+            } else if (y == -3) {
+                // no en pessant
             }
         }
         
-        // move one column to the right after each iteration
+        // move one column to the right after each iteration by default
         x += 1;
 
         std::cout << fen_char << " at: " << x << ", " << y << std::endl;

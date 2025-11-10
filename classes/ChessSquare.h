@@ -38,4 +38,6 @@ private:
     int _column;
     int _row;
     std::string _notation;
+
+    const char num_to_alpha[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 };
