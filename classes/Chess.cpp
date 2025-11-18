@@ -25,7 +25,7 @@ char Chess::pieceNotation(int x, int y) const
 }
 
 Bit* Chess::PieceForPlayer(const int playerNumber, ChessPiece piece)
-{
+{   
     const char* pieces[] = { "pawn.png", "knight.png", "bishop.png", "rook.png", "queen.png", "king.png" };
 
     Bit* bit = new Bit();
@@ -35,7 +35,7 @@ Bit* Chess::PieceForPlayer(const int playerNumber, ChessPiece piece)
     bit->LoadTextureFromFile(spritePath.c_str());
     bit->setOwner(getPlayerAt(playerNumber));
     bit->setSize(pieceSize, pieceSize);
-
+    bit->setGameTag(playerNumber == 0 ? piece : piece + 128);
     return bit;
 }
 
@@ -47,32 +47,32 @@ void Chess::setUpBoard()
 
     _grid->initializeChessSquares(pieceSize, "boardsquare.png");
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    
+    // generate moves for each position on the board
+    for (int i = 0; i < 64; i++) {
+        _knightBitBoards[i] = generateKnightMoveBitBoard(i);
+    }
+    _moves = generateAllMoves();
 
     startGame();
 }
 
 void Chess::FENtoBoard(const std::string& fen) {
     // convert a FEN string to a board
-    // FEN is a space delimited string with 6 fields
-    // 1: piece placement (from white's perspective)
-    // NOT PART OF THIS ASSIGNMENT BUT OTHER THINGS THAT CAN BE IN A FEN STRING
-    // ARE BELOW
-    // 2: active color (W or B)
-    // 3: castling availability (KQkq or -)
-    // 4: en passant target square (in algebraic notation, or -)
-    // 5: halfmove clock (number of halfmoves since the last capture or pawn advance)
+
+    _grid->forEachSquare([](ChessSquare* square, int x, int y) {
+        square->setBit(nullptr);
+    });
+
     int y = _grid->getHeight()-1;
     int x = 0;
-    std::cout << fen.length() << std::endl;
-    for (int i = 0; i < fen.length(); i++) {
-        char fen_char = fen[i];
-
+    for (char fen_char : fen) {
         // go to next row when reaching
         // - '/' for a new row on the board
-        // - ' ' for breaks in notation between castling, enpessant, etc.
+        // - ' ' for breaks in notation between boardstate, castling, enpessant, etc.
         if (fen_char == '/' || fen_char == ' ') {
             y--;
-            // when y > 0, the function is searching for spaces on the board
+            // when y >= 0, the function is searching for spaces on the board
             // when y < 0, the function is searching for castling, enpessant, and other notations
             // y = -1 | set turn for player
             // y = -2 | set castling availability for each player
@@ -84,73 +84,76 @@ void Chess::FENtoBoard(const std::string& fen) {
         }
 
         // create a bit, and assign it to a square at the given x, y
-        Bit *bit = new Bit();
-        char lower_fen_char = tolower(fen_char);
-        BitHolder* curr_square = _grid->getSquare(x, y);
-        bit->setPosition(curr_square->getPosition());
-        curr_square->setBit(bit);
-
+        Bit *bit = nullptr;
+        char fen_lower = tolower(fen_char);
         // check if character matches a piece
         // set the correct piece image for the bit
-        if (lower_fen_char == 'p') {
-            bit->LoadTextureFromFile(fen_char == 'P' ? "w_pawn.png" : "b_pawn.png");
-        } else if (lower_fen_char == 'r') {
-            bit->LoadTextureFromFile(fen_char == 'R' ? "w_rook.png" : "b_rook.png");
-        } else if (lower_fen_char == 'n') {
-            bit->LoadTextureFromFile(fen_char == 'N' ? "w_knight.png" : "b_knight.png");
-        } else if (lower_fen_char == 'b') {
-            bit->LoadTextureFromFile(fen_char == 'B' ? "w_bishop.png" : "b_bishop.png");
-        } else if (lower_fen_char == 'q') {
-            // q is notation for queen position AND queen side rotation
-            if (y == -2) {
+        if (y >= 0) {
+            if (!isdigit(fen_char)) {
+                ChessPiece piece = Pawn;
+                switch(fen_lower) {
+                    case 'p':
+                        break;
+                    case 'r':
+                        piece = Rook;
+                        break;
+                    case 'n':
+                        piece = Knight;
+                        break;
+                    case 'b':
+                        piece = Bishop;
+                        break;
+                    case 'q':
+                        piece = Queen;
+                        break;
+                    case 'k':
+                        piece = King;
+                        break;   
+                } 
+                bit = PieceForPlayer(std::isupper(fen_char) ? 0 : 1, piece);
+                BitHolder* curr_square = _grid->getSquare(x, y);
+                bit->setPosition(curr_square->getPosition());
+                curr_square->setBit(bit);
+            }
+            // check for numbers 
+            else { 
+                x += fen_char - '0';
+                // skip columns based on fen_char number
+            }
+        } else if (y == -1) {  // check turn
+            if (fen_lower == 'w') {
+                // white to move
+            } else if (fen_lower == 'b') {  
+                // black to move
+            }
+        } else if (y == -2) {
+            if (fen_lower == 'q') {
                 // set castle rules
-            } else {
-                bit->LoadTextureFromFile(fen_char == 'Q' ? "w_queen.png" : "b_queen.png");
-            }
-        } else if (lower_fen_char == 'k') {
-            // k is notation for king position AND king side rotation
-            if (y == -2) {
+            } else if (fen_lower == 'k') {
                 // set castle rules
-            } else {
-                bit->LoadTextureFromFile(fen_char == 'K' ? "w_king.png" : "b_king.png");
-            }
-        } 
-        // check for numbers 
-        // - can specify empty spaces in chessboard
-        // - can also specify halfmoves and fullmoves
-        else if (isdigit(fen_char)) { 
-            if (y > 0) {
-                for (int space = 1; space < fen_char - '0'; space ++) { // remove one from iteration to accomodate for default space movement
-                    x += 1;
-                }                
-            } else if (y == -4) {
-                // half move
-            } else if (y == -5) {
-                // full move
-            }
-        }
-
-        // check for player turn
-        else if (lower_fen_char == 'w') {  // white to move
-
-        } else if (lower_fen_char == 'b') {  // black to move
-
-        }
-
-        // '-' is used in multiple parts of the fen string. use the negative y value to determine what its for
-        else if (lower_fen_char == '-') {
-            if (y == -2) {
+            } else if (fen_lower == '-') {
                 // nobody can castle
-            } else if (y == -3) {
-                // no en pessant
             }
+        } else if (y == -3) {  // en pessant rules
+            if (fen_lower == '-') {
+                // no enpessant
+            }
+        }  else if (y == -4) {
+            // half move
+        } else if (y == -5) {
+            // full move
         }
+        
         
         // move one column to the right after each iteration by default
         x += 1;
-
-        std::cout << fen_char << " at: " << x << ", " << y << std::endl;
     }
+
+    // for (int i = 0; i < 64; i ++) {
+    //     x = i%8;
+    //     y = i/8;
+    //     std::cout << _grid->getSquare(x,y)->gameTag() << " at: " << x << ", " << y << std::endl;
+    // }
 
 
 }
@@ -166,12 +169,36 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
     int currentPlayer = getCurrentPlayer()->playerNumber() * 128;
     int pieceColor = bit.gameTag() & 128;
     if (pieceColor == currentPlayer) return true;
-    return false;
+
+    bool ret = false;
+    ChessSquare* square = (ChessSquare *)&src;
+    if (square) {
+        // highlight each square which the piece can move to
+        int squareIndex = square->getSquareIndex();
+        for (auto move : _moves) {
+            if (move.from == squareIndex) {
+                ret = true;
+                ChessSquare* dest = _grid->getSquareByIndex(move.to);
+                dest->setHighlighted(true);
+            }
+        }
+    }
+    return ret;
 }
 
 bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
-    return true;
+    ChessSquare* square = (ChessSquare *)&dst;
+    if (square) {
+        // if one of the moves is the destination square, return true
+        int squareIndex = square->getSquareIndex();
+        for (auto move : _moves) {
+            if (move.to == squareIndex) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void Chess::stopGame()
@@ -211,16 +238,19 @@ std::string Chess::initialStateString()
 
 std::string Chess::stateString()
 {
+    
     std::string s;
     s.reserve(64);
     _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
             s += pieceNotation( x, y );
         }
     );
+    //std::cout << "creating state string: " << s << std::endl;
     return s;}
 
 void Chess::setStateString(const std::string &s)
 {
+    std::cout << "setting state string" << std::endl;
     _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
         int index = y * 8 + x;
         char playerNumber = s[index] - '0';
@@ -231,3 +261,65 @@ void Chess::setStateString(const std::string &s)
         }
     });
 }
+
+#pragma region Chess Piece Movement
+
+std::vector<BitMove> Chess::generateAllMoves()
+{
+    std::vector<BitMove> moves;
+    moves.reserve(32);
+    std::string state = stateString();
+
+    uint64_t whiteKnights = 0LL;
+    uint64_t whitePawns = 0LL;
+    float fooFloat = 0.0f;
+
+    for (int i = 0; i < 64; i++) {
+        if (state[i] == 'N') {
+            whiteKnights |= 1ULL << i;
+        } else if (state[i] == 'P') {
+            whitePawns |= 1ULL << i;
+        }
+    }
+
+    uint64_t occupancy = whiteKnights | whitePawns;
+    generateKnightMoves(moves, whiteKnights, ~occupancy);
+
+    std::cout << moves.size() << std::endl;
+    return moves;
+}
+
+BitBoard Chess::generateKnightMoveBitBoard(int square) {
+    // create an empty bitboard
+    BitBoard bitboard = 0ULL;
+    int column = square / 8;  // y value
+    int row = square % 8;     // x value
+
+    constexpr uint64_t oneBit = 1;
+    // if the offset position is a valid position on the board, mark it on the bitboard
+    for (auto [dx, dy] : knightOffsets) {
+        int x = row + dx, y = column + dy;
+        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            // shift the 1 bit onto the respective place on the board relative to its on-board index
+            bitboard |= oneBit << (y * 8 + x);
+        }
+    }
+
+    return bitboard;
+}
+
+void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoard, uint64_t empty_squares) {
+    knightBoard.forEachBit([&](int fromSquare) {
+        BitBoard moveBitboard = BitBoard(_knightBitBoards[fromSquare].getData() & empty_squares);
+        std::cout << fromSquare % 8 << " , " << fromSquare / 8 << std::endl;
+        _knightBitBoards[fromSquare].printBitboard();
+        // Efficiently iterate through only the set bits
+        moveBitboard.forEachBit([&](int toSquare) {
+           moves.emplace_back(fromSquare, toSquare, Knight);
+        });
+    });
+}
+
+
+
+#pragma endregion

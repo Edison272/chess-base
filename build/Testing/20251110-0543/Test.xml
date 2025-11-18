@@ -3,7 +3,7 @@
 	BuildStamp="20251110-0543-Experimental"
 	Name="DESKTOP-JOQPFRB"
 	Generator="ctest-4.1.2"
-	CompilerName="C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x86/cl.exe"
+	CompilerName="C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx86/x64/cl.exe"
 	CompilerVersion="19.44.35217.0"
 	OSName="Windows"
 	Hostname="DESKTOP-JOQPFRB"
@@ -19,17 +19,17 @@
 	ProcessorCacheSize="-1"
 	NumberOfLogicalCPU="8"
 	NumberOfPhysicalCPU="4"
-	TotalVirtualMemory="28947"
+	TotalVirtualMemory="29971"
 	TotalPhysicalMemory="16147"
 	LogicalProcessorsPerPhysical="2"
 	ProcessorClockFrequency="1498"
 	>
 	<Testing>
-		<StartDateTime>Nov 09 23:10 Pacific Standard Time</StartDateTime>
-		<StartTestTime>1762758630</StartTestTime>
+		<StartDateTime>Nov 17 20:28 Pacific Standard Time</StartDateTime>
+		<StartTestTime>1763440111</StartTestTime>
 		<TestList/>
-		<EndDateTime>Nov 09 23:10 Pacific Standard Time</EndDateTime>
-		<EndTestTime>1762758630</EndTestTime>
+		<EndDateTime>Nov 17 20:28 Pacific Standard Time</EndDateTime>
+		<EndTestTime>1763440111</EndTestTime>
 		<ElapsedMinutes>0</ElapsedMinutes>
 	</Testing>
 </Site>
