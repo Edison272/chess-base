@@ -47,10 +47,12 @@ void Chess::setUpBoard()
 
     _grid->initializeChessSquares(pieceSize, "boardsquare.png");
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    //FENtoBoard("8/8/8/4N3/8/8/8/8/8");
     
     // generate moves for each position on the board
     for (int i = 0; i < 64; i++) {
         _knightBitBoards[i] = generateKnightMoveBitBoard(i);
+        _kingBitBoards[i] = generateKingMoveBitBoard(i);
     }
     _moves = generateAllMoves();
 
@@ -114,11 +116,15 @@ void Chess::FENtoBoard(const std::string& fen) {
                 BitHolder* curr_square = _grid->getSquare(x, y);
                 bit->setPosition(curr_square->getPosition());
                 curr_square->setBit(bit);
+
+                // move one column to the right after each iteration by default
+                x += 1;
             }
             // check for numbers 
             else { 
                 x += fen_char - '0';
                 // skip columns based on fen_char number
+                // -1 to offset for default x move
             }
         } else if (y == -1) {  // check turn
             if (fen_lower == 'w') {
@@ -143,10 +149,6 @@ void Chess::FENtoBoard(const std::string& fen) {
         } else if (y == -5) {
             // full move
         }
-        
-        
-        // move one column to the right after each iteration by default
-        x += 1;
     }
 
     // for (int i = 0; i < 64; i ++) {
@@ -272,6 +274,7 @@ std::vector<BitMove> Chess::generateAllMoves()
 
     uint64_t whiteKnights = 0LL;
     uint64_t whitePawns = 0LL;
+    unsigned int whiteKingPos = 0;  // only save a singular int value for the index of the king
     float fooFloat = 0.0f;
 
     for (int i = 0; i < 64; i++) {
@@ -279,11 +282,14 @@ std::vector<BitMove> Chess::generateAllMoves()
             whiteKnights |= 1ULL << i;
         } else if (state[i] == 'P') {
             whitePawns |= 1ULL << i;
+        } else if (state[i] == 'K') {
+            whiteKingPos = i;
         }
     }
 
     uint64_t occupancy = whiteKnights | whitePawns;
     generateKnightMoves(moves, whiteKnights, ~occupancy);
+    generateKingMoves(moves, whiteKingPos, ~occupancy);
 
     std::cout << moves.size() << std::endl;
     return moves;
@@ -311,8 +317,6 @@ BitBoard Chess::generateKnightMoveBitBoard(int square) {
 void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoard, uint64_t empty_squares) {
     knightBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(_knightBitBoards[fromSquare].getData() & empty_squares);
-        std::cout << fromSquare % 8 << " , " << fromSquare / 8 << std::endl;
-        _knightBitBoards[fromSquare].printBitboard();
         // Efficiently iterate through only the set bits
         moveBitboard.forEachBit([&](int toSquare) {
            moves.emplace_back(fromSquare, toSquare, Knight);
@@ -320,6 +324,34 @@ void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoar
     });
 }
 
+BitBoard Chess::generateKingMoveBitBoard(int square) {
+    // create an empty bitboard
+    BitBoard bitboard = 0ULL;
+    int column = square / 8;  // y value
+    int row = square % 8;     // x value
+
+    constexpr uint64_t oneBit = 1;
+    // if the offset position is a valid position on the board, mark it on the bitboard
+    for (auto [dx, dy] : kingOffsets) {
+        int x = row + dx, y = column + dy;
+        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            // shift the 1 bit onto the respective place on the board relative to its on-board index
+            bitboard |= oneBit << (y * 8 + x);
+        }
+    }
+
+    return bitboard;
+}
+
+void Chess::generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos, uint64_t empty_squares){
+    BitBoard moveBitboard = BitBoard(_kingBitBoards[kingPos].getData() & empty_squares);
+    std::cout << kingPos % 8 << " , " << kingPos / 8 << std::endl;
+    _kingBitBoards[kingPos].printBitboard();
+    // Efficiently iterate through only the set bits
+    moveBitboard.forEachBit([&](int toSquare) {
+        moves.emplace_back(kingPos, toSquare, Knight);
+    });
+}
 
 
 #pragma endregion

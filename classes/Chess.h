@@ -47,6 +47,17 @@ private:
         {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
         {1, 2}, {1, -2}, {-1, 2}, {-1, -2}
     };
+    
+
+    //King
+    // Only accounts for the position of ONE KING, whose index pos is indicated at kingPos
+    BitBoard  _kingBitBoards[64];
+    BitBoard generateKingMoveBitBoard(int square); 
+    void generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos, uint64_t empty_squares);
+    std::pair<int, int> kingOffsets[8] = {  // all possible moveable positions as a knight
+        {1, 0}, {1, 1}, {0, 1}, {-1, 1},
+        {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
+    };
 
     // Pawn
     BitBoard generatePawnMoveBitBoard(int square); 
