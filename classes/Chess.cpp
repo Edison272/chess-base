@@ -49,7 +49,7 @@ void Chess::setUpBoard()
     //FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
     
     // TEST CAPTURE
-    FENtoBoard("8/8/3N4/8/1K2n3/8/5P2/k7");
+    FENtoBoard("8/8/3N4/8/1K2n3/3P4/5P2/k7");
     
     // generate moves for each position on the board
     for (int i = 0; i < 64; i++) {
@@ -282,27 +282,42 @@ std::vector<BitMove> Chess::generateAllMoves()
     uint64_t whiteBishops = 0LL;
     uint64_t whiteRooks = 0LL;
     uint64_t whiteQueens = 0LL;
-    float fooFloat = 0.0f;
+
+    uint64_t blackKnights = 0LL;
+    uint64_t blackPawns = 0LL;
+    unsigned int blackKingPos = 65;
+    uint64_t blackBishops = 0LL;
+    uint64_t blackRooks = 0LL;
+    uint64_t blackQueens = 0LL;
 
     for (int i = 0; i < 64; i++) {
-        if (state[i] == 'N') {
-            whiteKnights |= 1ULL << i;
-        } else if (state[i] == 'P') {
-            whitePawns |= 1ULL << i;
-        } else if (state[i] == 'K') {
-            whiteKingPos = i;
-        } else if (state[i] == 'B') {
-            whiteBishops |= 1ULL << i;
-        } else if (state[i] == 'R') {
-            whiteRooks |= 1ULL << i;
-        } else if (state[i] == 'Q') {
-            whiteQueens |= 1ULL << i;
-        }
+        char fen_char = state[i];
+        switch(tolower(fen_char)) {
+            case 'p':
+                isupper(fen_char) ? whitePawns |= 1ULL << i : blackPawns |= 1ULL << i;
+                break;
+            case 'r':
+                isupper(fen_char) ? whiteRooks |= 1ULL << i : blackRooks |= 1ULL << i;
+                break;
+            case 'n':
+                isupper(fen_char) ? whiteKnights |= 1ULL << i : blackKnights |= 1ULL << i;
+                break;
+            case 'b':
+                isupper(fen_char) ? whiteBishops |= 1ULL << i : blackBishops |= 1ULL << i;
+                break;
+            case 'q':
+                isupper(fen_char) ? whiteQueens |= 1ULL << i : blackQueens |= 1ULL << i;
+                break;
+            case 'k':
+                isupper(fen_char) ? whiteKingPos = i : blackKingPos = i;
+                break;   
+        } 
     }
     uint64_t w_occupancy = whiteKnights | whitePawns | ((uint64_t)0ULL | 1ULL << whiteKingPos) | whiteBishops | whiteRooks | whiteQueens;
+    uint64_t b_occupancy = blackKnights | blackPawns | ((uint64_t)0ULL | 1ULL << blackKingPos) | blackBishops | blackRooks | blackQueens;
     generateKnightMoves(moves, whiteKnights, ~w_occupancy);
     generateKingMoves(moves, whiteKingPos, ~w_occupancy);
-    generatePawnMoves(moves, whitePawns, ~w_occupancy, 0, WHITE);
+    generatePawnMoves(moves, whitePawns, ~w_occupancy, b_occupancy, WHITE);
 
     std::cout << moves.size() << std::endl;
     return moves;
@@ -377,8 +392,8 @@ void Chess::generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos,
 
 #pragma region Pawn FX
 
-void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard enemyPieces,
-     BitBoard empty_squares, char color) {
+void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard empty_squares,
+     BitBoard enemyPieces, char color) {
     if (pawnBoard.getData() == 0) {  // no pawns
         return;
     }
@@ -394,6 +409,8 @@ void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, B
     BitBoard singleMoves = color == WHITE ? 
     (pawnBoard.getData() << 8) & empty_squares.getData(): 
     (pawnBoard.getData() >> 8) & empty_squares.getData();
+    BitBoard(empty_squares.getData()).printBitboard();
+    BitBoard(enemyPieces.getData()).printBitboard();
 
     // Calculate double moves
     /*only let pawns move forward if:
@@ -408,12 +425,12 @@ void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, B
     // can only capture when an enemy piece is present
     // check left column. Ignore for pawns on column 1
     BitBoard captureLeft = color == WHITE ? 
-    ((pawnBoard.getData() & NotCol1) << 7) & empty_squares.getData():
-    ((pawnBoard.getData() & NotCol1) >> 9) & empty_squares.getData();
+    ((pawnBoard.getData() & NotCol1) << 7) & enemyPieces.getData():
+    ((pawnBoard.getData() & NotCol1) >> 9) & enemyPieces.getData();
     // check right column. Ignore for pawns on column 8
     BitBoard captureRight = color == WHITE ? 
     ((pawnBoard.getData() & NotCol8) << 9) & enemyPieces.getData(): 
-    ((pawnBoard.getData() & NotCol1) >> 7) & enemyPieces.getData();
+    ((pawnBoard.getData() & NotCol8) >> 7) & enemyPieces.getData();
 
     int shiftForward = (color == WHITE) ? 8 : -8;
     int doubleShift = (color == WHITE) ? 16 : -16;

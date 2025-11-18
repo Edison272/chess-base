@@ -64,7 +64,7 @@ private:
 
     // Pawn
     BitBoard  _pawnBitBoards[64];
-    void generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard enemyPieces, BitBoard empty_squares, char color);
+    void generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard empty_squares, BitBoard enemyPieces, char color);
     void addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift);
 
     Grid* _grid;
