@@ -37,6 +37,9 @@ private:
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
 
+    #define WHITE 1
+    #define BLACK -1
+
     // piece movement
     // Knight
     BitBoard generateKnightMoveBitBoard(int square); 
@@ -60,13 +63,9 @@ private:
     };
 
     // Pawn
-    BitBoard generatePawnMoveBitBoard(int square); 
-    void generatePawnMoves(std::vector<BitMove>& moves, BitBoard knightBoard, uint64_t empty_squares);
-
-    // constexpr uint64_t NotCol0(0xFEFEFEFEFEFEFEFEULL);
-    // constexpr uint64_t NotCol7(0x7F7F7F7F7F7F7F7FULL);
-    // constexpr uint64_t Row3(0x0000000000FF0000ULL);
-    // constexpr uint64_t Row6(0x0000FF0000000000ULL);
+    BitBoard  _pawnBitBoards[64];
+    void generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard enemyPieces, BitBoard empty_squares, char color);
+    void addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift);
 
     Grid* _grid;
     std::vector<BitMove> generateAllMoves();

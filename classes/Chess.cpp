@@ -46,14 +46,17 @@ void Chess::setUpBoard()
     _gameOptions.rowY = 8;
 
     _grid->initializeChessSquares(pieceSize, "boardsquare.png");
-    FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-    //FENtoBoard("8/8/8/4N3/8/8/8/8/8");
+    //FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    
+    // TEST CAPTURE
+    FENtoBoard("8/8/3N4/8/1K2n3/8/5P2/k7");
     
     // generate moves for each position on the board
     for (int i = 0; i < 64; i++) {
         _knightBitBoards[i] = generateKnightMoveBitBoard(i);
         _kingBitBoards[i] = generateKingMoveBitBoard(i);
     }
+
     _moves = generateAllMoves();
 
     startGame();
@@ -170,7 +173,7 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
     // need to implement friendly/unfriendly in bit so for now this hack
     int currentPlayer = getCurrentPlayer()->playerNumber() * 128;
     int pieceColor = bit.gameTag() & 128;
-    if (pieceColor == currentPlayer) return true;
+    // if (pieceColor == currentPlayer) return true;
 
     bool ret = false;
     ChessSquare* square = (ChessSquare *)&src;
@@ -275,7 +278,7 @@ std::vector<BitMove> Chess::generateAllMoves()
 
     uint64_t whiteKnights = 0LL;
     uint64_t whitePawns = 0LL;
-    unsigned int whiteKingPos = -1;  // only save a singular int value for the index of the king
+    unsigned int whiteKingPos = 65;  // only save a singular int value for the index of the king
     uint64_t whiteBishops = 0LL;
     uint64_t whiteRooks = 0LL;
     uint64_t whiteQueens = 0LL;
@@ -296,10 +299,10 @@ std::vector<BitMove> Chess::generateAllMoves()
             whiteQueens |= 1ULL << i;
         }
     }
-
-    uint64_t occupancy = whiteKnights | whitePawns | ((uint64_t)0ULL | 1ULL << whiteKingPos) | whiteBishops | whiteRooks | whiteQueens;
-    generateKnightMoves(moves, whiteKnights, ~occupancy);
-    generateKingMoves(moves, whiteKingPos, ~occupancy);
+    uint64_t w_occupancy = whiteKnights | whitePawns | ((uint64_t)0ULL | 1ULL << whiteKingPos) | whiteBishops | whiteRooks | whiteQueens;
+    generateKnightMoves(moves, whiteKnights, ~w_occupancy);
+    generateKingMoves(moves, whiteKingPos, ~w_occupancy);
+    generatePawnMoves(moves, whitePawns, ~w_occupancy, 0, WHITE);
 
     std::cout << moves.size() << std::endl;
     return moves;
@@ -360,6 +363,9 @@ BitBoard Chess::generateKingMoveBitBoard(int square) {
 }
 
 void Chess::generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos, uint64_t empty_squares){
+    if (kingPos == 65) { // no king, so return
+        return;
+    }
     BitBoard moveBitboard = BitBoard(_kingBitBoards[kingPos].getData() & empty_squares);
     // Efficiently iterate through only the set bits
     moveBitboard.forEachBit([&](int toSquare) {
@@ -367,5 +373,75 @@ void Chess::generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos,
     });
 }
 
+#pragma endregion
+
+#pragma region Pawn FX
+
+void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard enemyPieces,
+     BitBoard empty_squares, char color) {
+    if (pawnBoard.getData() == 0) {  // no pawns
+        return;
+    }
+
+    // define row & column masks for specific pawn cases
+    constexpr uint64_t NotCol1(0xFEFEFEFEFEFEFEFEULL);  // mask along the first column
+    constexpr uint64_t NotCol8(0x7F7F7F7F7F7F7F7FULL);  // mask along the last column
+    constexpr uint64_t Row3(0x0000000000FF0000ULL);     // mask on the 3rd row
+    constexpr uint64_t Row6(0x0000FF0000000000ULL);     // mask on the 6th row
+
+    // Calculate single moves
+    // shift bits LEFT to push white up the board. otherwise, shift bits RIGHT to push black down the board
+    BitBoard singleMoves = color == WHITE ? 
+    (pawnBoard.getData() << 8) & empty_squares.getData(): 
+    (pawnBoard.getData() >> 8) & empty_squares.getData();
+
+    // Calculate double moves
+    /*only let pawns move forward if:
+    - (after a single move) pawns are on row 3 for white, row 6 for black
+    - after a single move, the next square is empty
+    */
+    BitBoard doubleMoves = color == WHITE ? 
+    ((singleMoves.getData() & Row3) << 8) & empty_squares.getData(): 
+    ((singleMoves.getData() & Row6) >> 8) & empty_squares.getData();
+
+    // Calculate left & right capturing
+    // can only capture when an enemy piece is present
+    // check left column. Ignore for pawns on column 1
+    BitBoard captureLeft = color == WHITE ? 
+    ((pawnBoard.getData() & NotCol1) << 7) & empty_squares.getData():
+    ((pawnBoard.getData() & NotCol1) >> 9) & empty_squares.getData();
+    // check right column. Ignore for pawns on column 8
+    BitBoard captureRight = color == WHITE ? 
+    ((pawnBoard.getData() & NotCol8) << 9) & enemyPieces.getData(): 
+    ((pawnBoard.getData() & NotCol1) >> 7) & enemyPieces.getData();
+
+    int shiftForward = (color == WHITE) ? 8 : -8;
+    int doubleShift = (color == WHITE) ? 16 : -16;
+    int captureLeftShift = (color == WHITE) ? 7 : -9;
+    int captureRightShift = (color == WHITE) ? 9 : -7;
+
+    // add single moves to list
+    addPawnBitBoardMoves(moves, singleMoves, shiftForward);
+    // add double moves to list
+    addPawnBitBoardMoves(moves, doubleMoves, doubleShift);
+    // add left captures to list
+    addPawnBitBoardMoves(moves, captureLeft, captureLeftShift);
+    // add right captures to list
+    addPawnBitBoardMoves(moves, captureRight, captureRightShift);
+}
+
+void Chess::addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift) {
+    if (pawnMove.getData() == 0) {
+        std::cout<<"grrr"<<std::endl;
+        return;
+    }
+    BitBoard new_board(pawnMove);
+    new_board.printBitboard();
+    pawnMove.forEachBit([&](int toSquare) {
+        int fromSquare = toSquare - shift;
+        moves.emplace_back(fromSquare, toSquare, Pawn);
+    });
+}
 
 #pragma endregion
+
