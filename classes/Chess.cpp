@@ -46,10 +46,10 @@ void Chess::setUpBoard()
     _gameOptions.rowY = 8;
 
     _grid->initializeChessSquares(pieceSize, "boardsquare.png");
-    //FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
     
     // TEST CAPTURE
-    FENtoBoard("8/8/3N4/8/1K2n3/3P4/5P2/k7");
+    //FENtoBoard("8/8/3N4/8/1K2n3/3P4/5P2/k7");
     
     // generate moves for each position on the board
     for (int i = 0; i < 64; i++) {
