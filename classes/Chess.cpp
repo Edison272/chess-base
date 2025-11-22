@@ -229,6 +229,7 @@ Player* Chess::ownerAt(int x, int y) const
 
 Player* Chess::checkForWinner()
 {
+    _moves = generateAllMoves();
     return nullptr;
 }
 
@@ -315,9 +316,20 @@ std::vector<BitMove> Chess::generateAllMoves()
     }
     uint64_t w_occupancy = whiteKnights | whitePawns | ((uint64_t)0ULL | 1ULL << whiteKingPos) | whiteBishops | whiteRooks | whiteQueens;
     uint64_t b_occupancy = blackKnights | blackPawns | ((uint64_t)0ULL | 1ULL << blackKingPos) | blackBishops | blackRooks | blackQueens;
-    generateKnightMoves(moves, whiteKnights, ~w_occupancy);
-    generateKingMoves(moves, whiteKingPos, ~w_occupancy);
-    generatePawnMoves(moves, whitePawns, ~w_occupancy, b_occupancy, WHITE);
+    uint64_t total_occupancy = w_occupancy | b_occupancy;
+    // player number 0 for white, 1 for black
+    if (getCurrentPlayer()->playerNumber() == 0) {
+        // white to move
+        generateKnightMoves(moves, whiteKnights, ~w_occupancy);
+        generateKingMoves(moves, whiteKingPos, ~w_occupancy);
+        generatePawnMoves(moves, whitePawns, ~total_occupancy, b_occupancy, WHITE);
+    } else {
+        // black to move
+        generateKnightMoves(moves, blackKnights, ~b_occupancy);
+        generateKingMoves(moves, blackKingPos, ~b_occupancy);
+        generatePawnMoves(moves, blackPawns, ~total_occupancy, w_occupancy, BLACK);
+    }
+
 
     std::cout << moves.size() << std::endl;
     return moves;
@@ -462,3 +474,4 @@ void Chess::addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard paw
 
 #pragma endregion
 
+#pragma endregion
