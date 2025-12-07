@@ -6,7 +6,26 @@
 
 constexpr int pieceSize = 80;
 
-//template <typename TYPE> void plusPlus(TYPE) {TYPE++;}
+enum AllBitBoards
+{
+    WHITE_PAWNS,
+    WHITE_KNIGHTS,
+    WHITE_BISHOPS,
+    WHITE_ROOKS,
+    WHITE_QUEENS,
+    WHITE_KINGS,
+    WHITE_ALL_PIECES,
+    BLACK_PAWNS,
+    BLACK_KNIGHTS,
+    BLACK_BISHOPS,
+    BLACK_ROOKS,
+    BLACK_QUEENS,
+    BLACK_KINGS,
+    BLACK_ALL_PIECES,
+    OCCUPANCY,
+    EMPTY_SQUARES,
+    e_numBitboards
+};
 
 class Chess : public Game
 {
@@ -52,7 +71,7 @@ private:
     };
     
 
-    //King
+    // King
     // Only accounts for the position of ONE KING, whose index pos is indicated at kingPos
     BitBoard  _kingBitBoards[64];
     BitBoard generateKingMoveBitBoard(int square); 
@@ -67,8 +86,20 @@ private:
     void generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard empty_squares, BitBoard enemyPieces, char color);
     void addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift);
 
+    // Bishop
+    void generateBishopMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles);
+
+    // Rook
+    void generateRookMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles);
+
+    // Queen
+    void generateQueenMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles);
+
+
     Grid* _grid;
     std::vector<BitMove> generateAllMoves();
 
     std::vector<BitMove>    _moves;
+    BitBoard _bitboards[e_numBitboards];
+    int _bitboardLookup;
 };

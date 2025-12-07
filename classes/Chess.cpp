@@ -1,10 +1,15 @@
 #include "Chess.h"
 #include <limits>
 #include <cmath>
+#include "MagicBitBoards.h"
+
 
 Chess::Chess()
 {
     _grid = new Grid(8, 8);
+
+    initMagicBitboards();   
+
 }
 
 Chess::~Chess()
@@ -323,11 +328,17 @@ std::vector<BitMove> Chess::generateAllMoves()
         generateKnightMoves(moves, whiteKnights, ~w_occupancy);
         generateKingMoves(moves, whiteKingPos, ~w_occupancy);
         generatePawnMoves(moves, whitePawns, ~total_occupancy, b_occupancy, WHITE);
+        generateBishopMoves(moves, whiteBishops, total_occupancy, w_occupancy);
+        generateRookMoves(moves, whiteRooks, total_occupancy, w_occupancy);
+        generateQueenMoves(moves, whiteQueens, total_occupancy, w_occupancy);
     } else {
         // black to move
         generateKnightMoves(moves, blackKnights, ~b_occupancy);
         generateKingMoves(moves, blackKingPos, ~b_occupancy);
         generatePawnMoves(moves, blackPawns, ~total_occupancy, w_occupancy, BLACK);
+        generateBishopMoves(moves, blackBishops, total_occupancy, b_occupancy);
+        generateRookMoves(moves, blackRooks, total_occupancy, b_occupancy);
+        generateQueenMoves(moves, blackQueens, total_occupancy, b_occupancy);
     }
 
 
@@ -363,40 +374,6 @@ void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoar
         moveBitboard.forEachBit([&](int toSquare) {
            moves.emplace_back(fromSquare, toSquare, Knight);
         });
-    });
-}
-
-#pragma endregion
-
-#pragma region King FX
-
-BitBoard Chess::generateKingMoveBitBoard(int square) {
-    // create an empty bitboard
-    BitBoard bitboard = 0ULL;
-    int column = square / 8;  // y value
-    int row = square % 8;     // x value
-
-    constexpr uint64_t oneBit = 1;
-    // if the offset position is a valid position on the board, mark it on the bitboard
-    for (auto [dx, dy] : kingOffsets) {
-        int x = row + dx, y = column + dy;
-        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-            // shift the 1 bit onto the respective place on the board relative to its on-board index
-            bitboard |= oneBit << (y * 8 + x);
-        }
-    }
-
-    return bitboard;
-}
-
-void Chess::generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos, uint64_t empty_squares){
-    if (kingPos == 65) { // no king, so return
-        return;
-    }
-    BitBoard moveBitboard = BitBoard(_kingBitBoards[kingPos].getData() & empty_squares);
-    // Efficiently iterate through only the set bits
-    moveBitboard.forEachBit([&](int toSquare) {
-        moves.emplace_back(kingPos, toSquare, Knight);
     });
 }
 
@@ -469,6 +446,83 @@ void Chess::addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard paw
     pawnMove.forEachBit([&](int toSquare) {
         int fromSquare = toSquare - shift;
         moves.emplace_back(fromSquare, toSquare, Pawn);
+    });
+}
+
+#pragma endregion
+
+#pragma region King FX
+
+BitBoard Chess::generateKingMoveBitBoard(int square) {
+    // create an empty bitboard
+    BitBoard bitboard = 0ULL;
+    int column = square / 8;  // y value
+    int row = square % 8;     // x value
+
+    constexpr uint64_t oneBit = 1;
+    // if the offset position is a valid position on the board, mark it on the bitboard
+    for (auto [dx, dy] : kingOffsets) {
+        int x = row + dx, y = column + dy;
+        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            // shift the 1 bit onto the respective place on the board relative to its on-board index
+            bitboard |= oneBit << (y * 8 + x);
+        }
+    }
+
+    return bitboard;
+}
+
+void Chess::generateKingMoves(std::vector<BitMove>& moves, unsigned int kingPos, uint64_t empty_squares){
+    if (kingPos == 65) { // no king, so return
+        return;
+    }
+    BitBoard moveBitboard = BitBoard(_kingBitBoards[kingPos].getData() & empty_squares);
+    // Efficiently iterate through only the set bits
+    moveBitboard.forEachBit([&](int toSquare) {
+        moves.emplace_back(kingPos, toSquare, Knight);
+    });
+}
+
+#pragma endregion
+
+#pragma region Queen FX
+
+void Chess::generateQueenMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles){
+    bishopBoard.forEachBit([&](int fromSquare) {
+        BitBoard moveBitboard = BitBoard(getQueenAttacks(fromSquare, occupancy) & ~friend_tiles);
+        // Efficiently iterate through only the set bits
+        moveBitboard.forEachBit([&](int toSquare) {
+           moves.emplace_back(fromSquare, toSquare, Queen);
+        });
+    });
+}
+
+#pragma endregion
+
+#pragma region Rook FX
+
+void Chess::generateRookMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles){
+    bishopBoard.forEachBit([&](int fromSquare) {
+        BitBoard moveBitboard = BitBoard(getRookAttacks(fromSquare, occupancy) & ~friend_tiles);
+        // Efficiently iterate through only the set bits
+        moveBitboard.forEachBit([&](int toSquare) {
+           moves.emplace_back(fromSquare, toSquare, Rook);
+        });
+    });
+}
+
+#pragma endregion
+
+#pragma region Bishop FX
+
+
+void Chess::generateBishopMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles){
+    bishopBoard.forEachBit([&](int fromSquare) {
+        BitBoard moveBitboard = BitBoard(getBishopAttacks(fromSquare, occupancy) & ~friend_tiles);
+        // Efficiently iterate through only the set bits
+        moveBitboard.forEachBit([&](int toSquare) {
+           moves.emplace_back(fromSquare, toSquare, Bishop);
+        });
     });
 }
 
