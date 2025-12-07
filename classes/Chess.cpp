@@ -260,7 +260,36 @@ std::string Chess::stateString()
     //std::cout << "creating state string: " << s << std::endl;
     return s;}
 
-void Chess::setStateString(const std::string &s)
+#pragma region Chess AI
+
+int evaluateBoard(std::string state) 
+{
+    int values[128];
+    values['P'] = 100;
+    values['N'] = 300;
+    values['B'] = 400;
+    values['R'] = 500;
+    values['Q'] = 1000;
+    values['K'] = 2000;
+    values['p'] = -100;
+    values['n'] = -300;
+    values['b'] = -400;
+    values['r'] = -500;
+    values['q'] = -1000;
+    values['k'] = -2000;
+
+    values['0'] = 0;
+    int score = 0;
+    for (char ch : state) {
+        score += values[ch];
+    }
+
+    return score;
+}
+
+#pragma endregion
+
+    void Chess::setStateString(const std::string &s)
 {
     std::cout << "setting state string" << std::endl;
     _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
@@ -340,9 +369,6 @@ std::vector<BitMove> Chess::generateAllMoves()
         generateRookMoves(moves, blackRooks, total_occupancy, b_occupancy);
         generateQueenMoves(moves, blackQueens, total_occupancy, b_occupancy);
     }
-
-
-    std::cout << moves.size() << std::endl;
     return moves;
 }
 
@@ -438,7 +464,6 @@ void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, B
 
 void Chess::addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift) {
     if (pawnMove.getData() == 0) {
-        std::cout<<"grrr"<<std::endl;
         return;
     }
     BitBoard new_board(pawnMove);

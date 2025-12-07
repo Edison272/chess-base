@@ -59,6 +59,9 @@ private:
     #define WHITE 1
     #define BLACK -1
 
+    // AI
+    int evaluateBoard(std::string);
+
     // piece movement
     // Knight
     BitBoard generateKnightMoveBitBoard(int square); 
