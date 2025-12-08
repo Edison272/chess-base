@@ -212,6 +212,14 @@ void Game::drawFrame()
 	});
 }
 
+void Game::cancelMove()
+{
+	std::cout << "clearing" << std::endl;
+	getGrid()->forEachEnabledSquare([&](ChessSquare* square, int x, int y) {
+		square->setHighlighted(false);
+	});
+}
+
 void Game::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
 	endTurn();
@@ -391,7 +399,9 @@ void Game::mouseUp(ImVec2 &location, Entity *entity)
 				_oldHolder->cancelDragBit(_dragBit);
 			_dragBit->setPosition(_oldPos);
 			clickedBit(*_dragBit);
+			
 		}
+		cancelMove();
 		_dropTarget = nullptr;
 		_dragBit = nullptr;
 	}

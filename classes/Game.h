@@ -63,6 +63,9 @@ public:
 	// Default implementation always returns true.
 	virtual bool canBitMoveFrom(Bit &bit, BitHolder &src) = 0;
 
+	// clear any UI elements if the piece was never moved past its source pos
+	virtual void cancelMove();
+
 	// /** Should return true if it is legal for the given Bit to move from src to dst.
 	// Default implementation always returns true.
 	virtual bool canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst) = 0;
