@@ -311,7 +311,7 @@ void Chess::updateAI() {
         state[dstSquare] = srcPce;
         state[srcSquare] = '0';
 
-        int moveVal = -negamax(state, 3, -currentPlayer, -1000000, 1000000);
+        int moveVal = -negamax(state, 6, -currentPlayer, -1000000, 1000000);
         // Undo move
         state[dstSquare] = oldDst;
         state[srcSquare] = srcPce;
@@ -357,13 +357,19 @@ int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, in
         state[dstSquare] = srcPce;
         state[srcSquare] = '0';
 
-        int moveVal = -negamax(state, depth - 1, -playerColor, -alpha, -beta);
+        bestVal = -negamax(state, depth - 1, -playerColor, -alpha, -beta);
         // Undo move
         state[dstSquare] = oldDst;
         state[srcSquare] = srcPce;
 
-        if (moveVal > bestVal) {
-            bestVal = moveVal;
+        // retain the BEST score the of the curr player as alpha
+        if (bestVal > alpha) {
+            alpha = bestVal;
+        }
+
+        // "prune" this recursion, the opp has an advantage here
+        if (alpha >= beta) {
+            break;
         }
     };
     return bestVal;

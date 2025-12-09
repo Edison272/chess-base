@@ -214,7 +214,6 @@ void Game::drawFrame()
 
 void Game::cancelMove()
 {
-	std::cout << "clearing" << std::endl;
 	getGrid()->forEachEnabledSquare([&](ChessSquare* square, int x, int y) {
 		square->setHighlighted(false);
 	});
