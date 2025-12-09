@@ -1,6 +1,8 @@
 #include "Chess.h"
 #include <limits>
 #include <cmath>
+#include <chrono>
+#include <iomanip>
 #include "MagicBitBoards.h"
 
 
@@ -242,7 +244,6 @@ Player* Chess::ownerAt(int x, int y) const
 Player* Chess::checkForWinner()
 {
     currentPlayer = getCurrentPlayer()->playerNumber() == 0 ? WHITE : BLACK;
-    std::cout << currentPlayer << std::endl;
 
     _moves = generateAllMoves(stateString(), currentPlayer);
     return nullptr;
@@ -270,11 +271,19 @@ std::string Chess::stateString()
 
 #pragma region Chess AI
 
+static std::map<char, int> _pieceValues = {  // scores are mapped to the indexes of AllBitBoards
+    {'P', 100}, {'N', 200}, {'B', 200}, {'R', 500}, {'Q', 1000}, {'K', 2000}, // white
+    {'p', -100}, {'n', -200}, {'b', -230}, {'r', -500}, {'q', -1000}, {'k', -2000},
+    {'0', 0}
+};
+
+#define FLIP(x) ((x) ^ 56)
 int Chess::evaluateBoard(std::string state) 
 {
     int score = 0;
     for (char ch : state) {
-        score += pieceValues[_bitboardLookup[ch]];
+        score += _pieceValues[ch];
+
     }
 
     return score;
@@ -286,20 +295,21 @@ void Chess::updateAI() {
     BitMove bestMove;
     std::string state = stateString();
 
+    // Moves Per Second (MPS) counting
+    const auto searchStart = std::chrono::steady_clock::now();
+    _countMoves = 0;
+
     for (auto move: _moves) {
-        int srcSquare = move.from;
-        int dstSquare = move.to;
-
         // modify state string to "move" piece
-        char oldDst = state[dstSquare];
-        char srcPce = state[srcSquare];
-        state[dstSquare] = srcPce;
-        state[srcSquare] = '0';
+        char dstPce = state[move.to];
+        char srcPce = state[move.from];
+        state[move.to] = srcPce;
+        state[move.from] = '0';
 
-        int moveVal = -negamax(state, 6, -currentPlayer, -1000000, 1000000);
+        int moveVal = -negamax(state, 7, -currentPlayer, -1000000, 1000000);
         // Undo move
-        state[dstSquare] = oldDst;
-        state[srcSquare] = srcPce;
+        state[move.to] = dstPce;
+        state[move.from] = srcPce;
 
         if (moveVal > bestVal) {
             bestMove = move;
@@ -308,20 +318,26 @@ void Chess::updateAI() {
     };
 
     // Confirm the move
-    int srcSquare = bestMove.from;
-    int dstSquare = bestMove.to;
-    BitHolder& src = getHolderAt(srcSquare % 8, srcSquare / 8);
-    BitHolder& dst = getHolderAt(dstSquare % 8, dstSquare / 8);
-    Bit* bit = src.bit();
-    dst.dropBitAtPoint(bit, ImVec2(0,0));
-    src.setBit(nullptr);
-    bitMovedFromTo(*bit, src, dst);
-    
+    if (bestVal != -1000000) {
+        // get move efficiency
+        const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - searchStart).count();
+        const double boardsPerSecond = seconds > 0.0 ? static_cast<double>(_countMoves) / seconds : 0.0;
+        std::cout << "Moves checked: " << _countMoves
+                << " (" << std::fixed << std::setprecision(2) << boardsPerSecond
+                << " boards/s)" << std::defaultfloat << std::endl;
+
+        // the actual move
+        BitHolder& src = getHolderAt(bestMove.from & 7, bestMove.from / 8);
+        BitHolder& dst = getHolderAt(bestMove.to & 7, bestMove.to / 8);
+        Bit* bit = src.bit();
+        dst.dropBitAtPoint(bit, ImVec2(0,0));
+        src.setBit(nullptr);
+        bitMovedFromTo(*bit, src, dst);
+    }
 }
 
 int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, int beta) {
-    
-    
+    _countMoves++;
     //max depth
     if (depth == 0) {
         return evaluateBoard(state) * playerColor;
@@ -329,23 +345,23 @@ int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, in
     
     // get new moves based on new state
     auto newMoves = generateAllMoves(state, playerColor);
+    if (newMoves.size() == 0) {
+        return evaluateBoard(state) * playerColor;
+    }
 
     int bestVal = -1000000;
     // branch out into the next possible board outcomes 
     for (auto move: newMoves) {
-        int srcSquare = move.from;
-        int dstSquare = move.to;
-
         // modify state string to "move" piece
-        char oldDst = state[dstSquare];
-        char srcPce = state[srcSquare];
-        state[dstSquare] = srcPce;
-        state[srcSquare] = '0';
+        char dstPce = state[move.to];
+        char srcPce = state[move.from];
+        state[move.to] = srcPce;
+        state[move.from] = '0';
 
-        bestVal = -negamax(state, depth - 1, -playerColor, -alpha, -beta);
+        bestVal = std::max(bestVal, -negamax(state, depth - 1, -playerColor, -alpha, -beta));
         // Undo move
-        state[dstSquare] = oldDst;
-        state[srcSquare] = srcPce;
+        state[move.to] = dstPce;
+        state[move.from] = srcPce;
 
         // retain the BEST score the of the curr player as alpha
         if (bestVal > alpha) {
@@ -419,30 +435,10 @@ std::vector<BitMove> Chess::generateAllMoves(const std::string state, int player
     generateRookMoves(moves, _bitboards[WHITE_ROOKS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
     generateQueenMoves(moves, _bitboards[WHITE_QUEENS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
 
-
     return moves;
 }
 
 #pragma region Knight FX
-
-BitBoard Chess::generateKnightMoveBitBoard(int square) {
-    // create an empty bitboard
-    BitBoard bitboard = 0ULL;
-    int column = square / 8;  // y value
-    int row = square % 8;     // x value
-
-    constexpr uint64_t oneBit = 1;
-    // if the offset position is a valid position on the board, mark it on the bitboard
-    for (auto [dx, dy] : knightOffsets) {
-        int x = row + dx, y = column + dy;
-        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-            // shift the 1 bit onto the respective place on the board relative to its on-board index
-            bitboard |= oneBit << (y * 8 + x);
-        }
-    }
-
-    return bitboard;
-}
 
 void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoard, uint64_t empty_squares) {
     knightBoard.forEachBit([&](int fromSquare) {
@@ -522,24 +518,6 @@ void Chess::addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard paw
 
 #pragma region King FX
 
-BitBoard Chess::generateKingMoveBitBoard(int square) {
-    // create an empty bitboard
-    BitBoard bitboard = 0ULL;
-    int column = square / 8;  // y value
-    int row = square % 8;     // x value
-
-    constexpr uint64_t oneBit = 1;
-    // if the offset position is a valid position on the board, mark it on the bitboard
-    for (auto [dx, dy] : kingOffsets) {
-        int x = row + dx, y = column + dy;
-        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-            // shift the 1 bit onto the respective place on the board relative to its on-board index
-            bitboard |= oneBit << (y * 8 + x);
-        }
-    }
-
-    return bitboard;
-}
 void Chess::generateKingMoves(std::vector<BitMove>& moves, BitBoard piecesBoard, uint64_t empty_squares) {
     piecesBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(KingAttacks[fromSquare] & empty_squares);

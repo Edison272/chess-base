@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Grid.h"
 #include "BitBoard.h"
+#include "PieceSquare.h"
 
 constexpr int pieceSize = 80;
 
@@ -76,28 +77,11 @@ private:
 
     // piece movement
     // Knight
-    BitBoard generateKnightMoveBitBoard(int square); 
     void generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoard, uint64_t empty_squares);
-    
-    BitBoard  _knightBitBoards[64];
-    std::pair<int, int> knightOffsets[8] = {  // all possible moveable positions as a knight
-        {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
-        {1, 2}, {1, -2}, {-1, 2}, {-1, -2}
-    };
-    
 
     // King
-    // Only accounts for the position of ONE KING, whose index pos is indicated at kingPos
-    BitBoard  _kingBitBoards[64];
-    BitBoard generateKingMoveBitBoard(int square); 
     void generateKingMoves(std::vector<BitMove>& moves, BitBoard piecesBoard, uint64_t empty_squares);
-    std::pair<int, int> kingOffsets[8] = {  // all possible moveable positions as a knight
-        {1, 0}, {1, 1}, {0, 1}, {-1, 1},
-        {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
-    };
 
-    // Pawn
-    BitBoard  _pawnBitBoards[64];
     void generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard empty_squares, BitBoard enemyPieces, char color);
     void addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift);
 
@@ -117,9 +101,7 @@ private:
     std::vector<BitMove>    _moves;
     BitBoard _bitboards[e_numBitboards];
     int _bitboardLookup[128];
-    int pieceValues[16] = {  // scores are mapped to the indexes of AllBitBoards
-        100, 300, 400, 500, 1000, 2000, 0,
-        -100, -300, -400, -500, -1000, -2000,
-        0, 0, 0
-    };
+
+    // Debug
+    int _countMoves = 0;
 };
