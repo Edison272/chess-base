@@ -1,13 +1,13 @@
-Fork or clone your this chess project into a new GitHub repository.
+Building the Chess Game
 
-Add support for FEN stringsLinks to an external site. to your game setup so that instead of the current way you are setting up your game board you are setting it up with a call similar to the following call.
+I spent the longest amount of time on building the chest game, simply because of how much different the implementation was from what I expected it to be. My first reaction to making a chess game (without AI) was that it wouldn't be too hard, because every single piece and game condition can be done by some variation of interating throught the tiles of the gameboard and passing the board state though a conditional. However, the fact that we needed to translate the board state and piece movement patterns to a bit string redefined how I planned to go about programming the game, and a large amount of time was spent relearning how bitwise operations worked, and applying this to how a bit string could express pieces on a chess board. It took me several days of trying out a bunch of different stuff until I saw several of Professor Graeme's Lectures on Yuja to find out how a bitstring-based chessboard would work.
 
-FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+Making the Negamax AI
 
-Your routine should be able to take just the board position portion of a FEN string, or the entire FEN string like so:
+I was somewhat worried about implenting the Negamax Algorithm, but it turned out to be a pretty simple process. Be it TicTacToe, ConnectFour, or Chess, the fundementals of the Negamax algorithm (with AB pruning) remain the same. It only took me a couple hours to create a "functioning" Negamax AI by copying my Negamax algorithm from my Connect 4 AI, and adapting the Algorithm to use the bitboards system which the Chess Game runs on. The reason I say "functioning" is because the Negamax AI wasn't very smart- the AI's performance hinges entirely on its ability to evaluate the board state (evaluateBoard()), which currently only looks for material advantages. Checking for ONLY material without any sense of self preservation or development means the AI can be easily be led into traps, or sometimes make wildly unfavorable moves just to capture a piece.
 
-FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+The AI Currently Operates at a Depth of 6 without any wait time, and plays incredibly aggresively. Although the game gives the option to set both players to AI it is HIGHLY UNRECOMMENDED- the AI do not wait for the animations to finish before making their move, so AI vs AI matches are often just a blur of pieces until nothing is left.
 
-(you can ignore the end for now)
+Performance Optimization
 
-This will allow you to quickly check that your castling, promotion and en passant code is working.
+Excluding the use of Bitboards instead of a tile system as a more efficient way of detecting tile position, I tried to optimize my codei in the areas where the normal game loop and negamax recursion loop would access the most, namely the generateBoards() and evaluateBoard() function. The general approach I had to optimization was to reduce the amount of brancing and temporary memory allocation the program uses to get the job done, which meant reducing the usage of if statements (having a more direct approach of accessing data when possible), and declaring and defining certain Arrays & values at the beginning of the program, rather than declaring and defining them every time they're called in the script.

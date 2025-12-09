@@ -324,7 +324,7 @@ int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, in
     
     //max depth
     if (depth == 0) {
-        return evaluateBoard(state) * -playerColor;
+        return evaluateBoard(state) * playerColor;
     }
     
     // get new moves based on new state
