@@ -11,3 +11,7 @@ The AI Currently Operates at a Depth of 6 without any wait time, and plays incre
 Performance Optimization
 
 Excluding the use of Bitboards instead of a tile system as a more efficient way of detecting tile position, I tried to optimize my codei in the areas where the normal game loop and negamax recursion loop would access the most, namely the generateBoards() and evaluateBoard() function. The general approach I had to optimization was to reduce the amount of brancing and temporary memory allocation the program uses to get the job done, which meant reducing the usage of if statements (having a more direct approach of accessing data when possible), and declaring and defining certain Arrays & values at the beginning of the program, rather than declaring and defining them every time they're called in the script.
+
+"Aggro" Depth 6 Materialistic Evaluation AI in Action:
+(Video Link)
+https://drive.google.com/file/d/1Iwu0Pb_sNE_AzgoDXA77w4MskrkNVUty/view?usp=sharing
