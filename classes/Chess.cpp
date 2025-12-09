@@ -174,7 +174,6 @@ void Chess::FENtoBoard(const std::string& fen) {
     // for (int i = 0; i < 64; i ++) {
     //     x = i%8;
     //     y = i/8;
-    //     std::cout << _grid->getSquare(x,y)->gameTag() << " at: " << x << ", " << y << std::endl;
     // }
 
 
@@ -182,7 +181,6 @@ void Chess::FENtoBoard(const std::string& fen) {
 
 bool Chess::actionForEmptyHolder(BitHolder &holder)
 {
-    std::cout << "clear" << std::endl;
     return false;
 }
 
@@ -243,6 +241,9 @@ Player* Chess::ownerAt(int x, int y) const
 
 Player* Chess::checkForWinner()
 {
+    currentPlayer = getCurrentPlayer()->playerNumber() == 0 ? WHITE : BLACK;
+    std::cout << currentPlayer << std::endl;
+
     _moves = generateAllMoves(stateString(), currentPlayer);
     return nullptr;
 }
@@ -265,7 +266,6 @@ std::string Chess::stateString()
             s += pieceNotation( x, y );
         }
     );
-    //std::cout << "creating state string: " << s << std::endl;
     return s;}
 
 #pragma region Chess AI
@@ -311,7 +311,7 @@ void Chess::updateAI() {
         state[dstSquare] = srcPce;
         state[srcSquare] = '0';
 
-        int moveVal = -negamax(state, 3, -currentPlayer, -1000, 1000);
+        int moveVal = -negamax(state, 3, -currentPlayer, -1000000, 1000000);
         // Undo move
         state[dstSquare] = oldDst;
         state[srcSquare] = srcPce;
@@ -323,7 +323,14 @@ void Chess::updateAI() {
     };
 
     // Confirm the move
-
+    int srcSquare = bestMove.from;
+    int dstSquare = bestMove.to;
+    BitHolder& src = getHolderAt(srcSquare & 7, srcSquare / 8);
+    BitHolder& dst = getHolderAt(dstSquare & 7, dstSquare / 8);
+    Bit* bit = src.bit();
+    dst.dropBitAtPoint(bit, ImVec2(0,0));
+    src.setBit(nullptr);
+    bitMovedFromTo(*bit, src, dst);
     
 }
 
@@ -350,7 +357,7 @@ int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, in
         state[dstSquare] = srcPce;
         state[srcSquare] = '0';
 
-        int moveVal = -negamax(state, 3, -playerColor, -alpha, -beta);
+        int moveVal = -negamax(state, depth - 1, -playerColor, -alpha, -beta);
         // Undo move
         state[dstSquare] = oldDst;
         state[srcSquare] = srcPce;
@@ -385,8 +392,6 @@ std::vector<BitMove> Chess::generateAllMoves(const std::string state, int player
     std::vector<BitMove> moves;
     moves.reserve(32);
     // need to implement friendly/unfriendly in bit so for now this hack
-    currentPlayer = getCurrentPlayer()->playerNumber() == 0 ? WHITE : BLACK;
-    std::cout << currentPlayer << std::endl;
 
     for (int i = 0; i < e_numBitboards; i++) {
         _bitboards[i] = 0;
