@@ -76,6 +76,25 @@ namespace ClassGame {
                         ImGui::Text("%s", stateString.substr(y*stride,stride).c_str());
                     }
                     ImGui::Text("Current Board State: %s", game->stateString().c_str());
+                    
+                    // Toggle AI
+                    ImGui::SeparatorText("AI Settings");
+                    std::string toggle_ai_label = "Toggle AI | Currently " + std::string(game->_gameOptions.AIPlaying ? "On" : "Off");
+                    if (ImGui::Button(toggle_ai_label.c_str())) {
+                        game->_gameOptions.AIPlaying = !game->_gameOptions.AIPlaying;
+                    }
+
+                    if (game->_gameOptions.AIPlaying) {
+                        std::string toggle_player1_ai_label = "Player 1 AI | Currently " + std::string(game->getPlayerAt(0)->isAIPlayer() ? "On" : "Off");
+                        if (ImGui::Button(toggle_player1_ai_label.c_str())) {
+                            game->getPlayerAt(0)->setAIPlayer(!game->getPlayerAt(0)->isAIPlayer());
+                        }
+
+                        std::string toggle_player2_ai_label = "Player 2 AI | Currently " + std::string(game->getPlayerAt(1)->isAIPlayer() ? "On" : "Off");
+                        if (ImGui::Button(toggle_player2_ai_label.c_str())) {
+                            game->getPlayerAt(1)->setAIPlayer(!game->getPlayerAt(1)->isAIPlayer());
+                        }
+                    }
                 }
                 ImGui::End();
 

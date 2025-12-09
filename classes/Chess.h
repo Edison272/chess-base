@@ -27,6 +27,15 @@ enum AllBitBoards
     e_numBitboards
 };
 
+constexpr int WHITE = 1;
+constexpr int BLACK = -1;
+
+// row and column masks (for pawn movement)
+constexpr uint64_t NotCol1(0xFEFEFEFEFEFEFEFEULL);  // mask along the first column
+constexpr uint64_t NotCol8(0x7F7F7F7F7F7F7F7FULL);  // mask along the last column
+constexpr uint64_t Row3(0x0000000000FF0000ULL);     // mask on the 3rd row
+constexpr uint64_t Row6(0x0000FF0000000000ULL);     // mask on the 6th row
+
 class Chess : public Game
 {
 public:
@@ -41,6 +50,7 @@ public:
     bool actionForEmptyHolder(BitHolder &holder) override;
 
     void stopGame() override;
+    bool gameHasAI() override { return true; };
 
     Player *checkForWinner() override;
     bool checkForDraw() override;
@@ -57,12 +67,12 @@ private:
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
 
-    #define WHITE 1
-    #define BLACK -1
     int currentPlayer = 1;
 
     // AI
     int evaluateBoard(std::string);
+	void updateAI() override;
+    int negamax(std::string& state, int depth, int playerColor, int alpha, int beta);
 
     // piece movement
     // Knight
@@ -102,7 +112,7 @@ private:
 
 
     Grid* _grid;
-    std::vector<BitMove> generateAllMoves();
+    std::vector<BitMove> generateAllMoves(const std::string state, int playerColor);
 
     std::vector<BitMove>    _moves;
     BitBoard _bitboards[e_numBitboards];
