@@ -272,24 +272,9 @@ std::string Chess::stateString()
 
 int Chess::evaluateBoard(std::string state) 
 {
-    int values[128];
-    values['P'] = 100;
-    values['N'] = 300;
-    values['B'] = 400;
-    values['R'] = 500;
-    values['Q'] = 1000;
-    values['K'] = 2000;
-    values['p'] = -100;
-    values['n'] = -300;
-    values['b'] = -400;
-    values['r'] = -500;
-    values['q'] = -1000;
-    values['k'] = -2000;
-
-    values['0'] = 0;
     int score = 0;
     for (char ch : state) {
-        score += values[ch];
+        score += pieceValues[_bitboardLookup[ch]];
     }
 
     return score;
@@ -325,8 +310,8 @@ void Chess::updateAI() {
     // Confirm the move
     int srcSquare = bestMove.from;
     int dstSquare = bestMove.to;
-    BitHolder& src = getHolderAt(srcSquare & 7, srcSquare / 8);
-    BitHolder& dst = getHolderAt(dstSquare & 7, dstSquare / 8);
+    BitHolder& src = getHolderAt(srcSquare % 8, srcSquare / 8);
+    BitHolder& dst = getHolderAt(dstSquare % 8, dstSquare / 8);
     Bit* bit = src.bit();
     dst.dropBitAtPoint(bit, ImVec2(0,0));
     src.setBit(nullptr);
@@ -339,7 +324,7 @@ int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, in
     
     //max depth
     if (depth == 0) {
-        return evaluateBoard(state) * playerColor;
+        return evaluateBoard(state) * -playerColor;
     }
     
     // get new moves based on new state

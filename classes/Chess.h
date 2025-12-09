@@ -117,4 +117,9 @@ private:
     std::vector<BitMove>    _moves;
     BitBoard _bitboards[e_numBitboards];
     int _bitboardLookup[128];
+    int pieceValues[16] = {  // scores are mapped to the indexes of AllBitBoards
+        100, 300, 400, 500, 1000, 2000, 0,
+        -100, -300, -400, -500, -1000, -2000,
+        0, 0, 0
+    };
 };
