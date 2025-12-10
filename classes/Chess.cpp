@@ -281,8 +281,37 @@ static std::map<char, int> _pieceValues = {  // scores are mapped to the indexes
 int Chess::evaluateBoard(std::string state) 
 {
     int score = 0;
+    int square = 0;
     for (char ch : state) {
         score += _pieceValues[ch];
+        bool isWhite = isupper(ch);
+        switch(ch) {
+            case 'P':
+            case 'p':
+                score += isWhite ? pawnTable[FLIP(square)] : -pawnTable[square];
+                break;
+            case 'N':
+            case 'n':
+                score += isWhite ? knightTable[FLIP(square)] : -knightTable[square];
+                break;
+            case 'B':
+            case 'b':
+                score += isWhite ? bishopTable[FLIP(square)] : -bishopTable[square];
+                break;
+            case 'R':
+            case 'r':
+                score += isWhite ? rookTable[FLIP(square)] : -rookTable[square];
+                break;
+            case 'Q':
+            case 'q':
+                score += isWhite ? queenTable[FLIP(square)] : -queenTable[square];
+                break;
+            case 'K':
+            case 'k':
+                score += isWhite ? kingTable[FLIP(square)] : -kingTable[square];
+                break;
+        }
+        square++;
 
     }
 
@@ -306,7 +335,7 @@ void Chess::updateAI() {
         state[move.to] = srcPce;
         state[move.from] = '0';
 
-        int moveVal = -negamax(state, 7, -currentPlayer, -1000000, 1000000);
+        int moveVal = -negamax(state, 6, -currentPlayer, -1000000, 1000000);
         // Undo move
         state[move.to] = dstPce;
         state[move.from] = srcPce;
