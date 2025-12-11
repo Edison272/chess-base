@@ -3,14 +3,10 @@
 #include <cmath>
 #include <chrono>
 #include <iomanip>
-#include "MagicBitBoards.h"
-
 
 Chess::Chess()
 {
     _grid = new Grid(8, 8);
-
-    initMagicBitboards();   
 
     // bit board lookup table to remove branching when finding bitboards
     for (int i = 0; i < 128; i++) {
@@ -22,19 +18,20 @@ Chess::Chess()
     _bitboardLookup['B'] = WHITE_BISHOPS;
     _bitboardLookup['R'] = WHITE_ROOKS;
     _bitboardLookup['Q'] = WHITE_QUEENS;
-    _bitboardLookup['K'] = WHITE_KINGS;
+    _bitboardLookup['K'] = WHITE_KING;
     _bitboardLookup['p'] = BLACK_PAWNS;
     _bitboardLookup['n'] = BLACK_KNIGHTS;
     _bitboardLookup['b'] = BLACK_BISHOPS;
     _bitboardLookup['r'] = BLACK_ROOKS;
     _bitboardLookup['q'] = BLACK_QUEENS;
-    _bitboardLookup['k'] = BLACK_KINGS;
+    _bitboardLookup['k'] = BLACK_KING;
     _bitboardLookup['0'] = EMPTY_SQUARES;
 }
 
 Chess::~Chess()
 {
     delete _grid;
+    _gameState.shutdown();
 }
 
 char Chess::pieceNotation(int x, int y) const
@@ -75,8 +72,9 @@ void Chess::setUpBoard()
     
     // TEST CAPTURE
     //FENtoBoard("8/8/3N4/8/1K2n3/3P4/5P2/k7");
-
-    _moves = generateAllMoves(stateString(), currentPlayer);
+    _gameState = GameState();
+    _gameState.init(stateString().c_str(), currentPlayer);
+    _moves = _gameState.generateAllMoves();
 
     startGame();
 }
@@ -241,11 +239,15 @@ Player* Chess::ownerAt(int x, int y) const
     return square->bit()->getOwner();
 }
 
+void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
+    currentPlayer = currentPlayer == WHITE ? BLACK : WHITE;
+    _gameState.init(stateString().c_str(), currentPlayer);
+    _moves = _gameState.generateAllMoves();
+    std::cout << _moves.size() << std::endl;
+}
+
 Player* Chess::checkForWinner()
 {
-    currentPlayer = getCurrentPlayer()->playerNumber() == 0 ? WHITE : BLACK;
-
-    _moves = generateAllMoves(stateString(), currentPlayer);
     return nullptr;
 }
 
@@ -273,54 +275,27 @@ std::string Chess::stateString()
 
 static std::map<char, int> _pieceValues = {  // scores are mapped to the indexes of AllBitBoards
     {'P', 100}, {'N', 200}, {'B', 200}, {'R', 500}, {'Q', 1000}, {'K', 2000}, // white
-    {'p', -100}, {'n', -200}, {'b', -230}, {'r', -500}, {'q', -1000}, {'k', -2000},
+    {'p', -100}, {'n', -200}, {'b', -200}, {'r', -500}, {'q', -1000}, {'k', -2000},
     {'0', 0}
 };
 
-#define FLIP(x) ((x) ^ 56)
-int Chess::evaluateBoard(std::string state) 
+int Chess::evaluateBoard(const GameState& gameState) 
 {
     int score = 0;
     int square = 0;
-    for (char ch : state) {
-        score += _pieceValues[ch];
-        bool isWhite = isupper(ch);
-        switch(ch) {
-            case 'P':
-            case 'p':
-                score += isWhite ? pawnTable[FLIP(square)] : -pawnTable[square];
-                break;
-            case 'N':
-            case 'n':
-                score += isWhite ? knightTable[FLIP(square)] : -knightTable[square];
-                break;
-            case 'B':
-            case 'b':
-                score += isWhite ? bishopTable[FLIP(square)] : -bishopTable[square];
-                break;
-            case 'R':
-            case 'r':
-                score += isWhite ? rookTable[FLIP(square)] : -rookTable[square];
-                break;
-            case 'Q':
-            case 'q':
-                score += isWhite ? queenTable[FLIP(square)] : -queenTable[square];
-                break;
-            case 'K':
-            case 'k':
-                score += isWhite ? kingTable[FLIP(square)] : -kingTable[square];
-                break;
-        }
-        square++;
+    for (int square = 0; square < 64; ++square) {
+        const unsigned char piece = gameState.state[square];
+        const int index = _bitboardLookup[gameState.state[square]];
+        score += _pieceValues[piece];
+        score += pieceSquareTables[index][square];
 
     }
-
     return score;
 }
 
 void Chess::updateAI() {
     // NEGAMAX ALGORITHM
-    int bestVal = -1000000;
+    int bestVal = -MILLY;
     BitMove bestMove;
     std::string state = stateString();
 
@@ -335,7 +310,7 @@ void Chess::updateAI() {
         state[move.to] = srcPce;
         state[move.from] = '0';
 
-        int moveVal = -negamax(state, 6, -currentPlayer, -1000000, 1000000);
+        int moveVal = -negamax(_gameState, MAX_DEPTH, -MILLY, MILLY);
         // Undo move
         state[move.to] = dstPce;
         state[move.from] = srcPce;
@@ -347,7 +322,7 @@ void Chess::updateAI() {
     };
 
     // Confirm the move
-    if (bestVal != -1000000) {
+    if (bestVal != -MILLY) {
         // get move efficiency
         const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - searchStart).count();
         const double boardsPerSecond = seconds > 0.0 ? static_cast<double>(_countMoves) / seconds : 0.0;
@@ -365,43 +340,34 @@ void Chess::updateAI() {
     }
 }
 
-int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, int beta) {
+int Chess::negamax(GameState& gamestate, int depth, int alpha, int beta) {
     _countMoves++;
     //max depth
     if (depth == 0) {
-        return evaluateBoard(state) * playerColor;
+        return evaluateBoard(gamestate);
     }
     
     // get new moves based on new state
-    auto newMoves = generateAllMoves(state, playerColor);
+    auto newMoves = _gameState.generateAllMoves();
+
+    // return board eval if there's no other moves
     if (newMoves.size() == 0) {
-        return evaluateBoard(state) * playerColor;
+        return evaluateBoard(gamestate);
     }
 
-    int bestVal = -1000000;
+    int bestVal = -MILLY;
     // branch out into the next possible board outcomes 
-    for (auto move: newMoves) {
-        // modify state string to "move" piece
-        char dstPce = state[move.to];
-        char srcPce = state[move.from];
-        state[move.to] = srcPce;
-        state[move.from] = '0';
-
-        bestVal = std::max(bestVal, -negamax(state, depth - 1, -playerColor, -alpha, -beta));
-        // Undo move
-        state[move.to] = dstPce;
-        state[move.from] = srcPce;
-
-        // retain the BEST score the of the curr player as alpha
-        if (bestVal > alpha) {
-            alpha = bestVal;
-        }
-
-        // "prune" this recursion, the opp has an advantage here
+    for(const auto& move : newMoves) {
+        _gameState.pushMove(move);
+        bestVal = std::max(bestVal, -negamax(_gameState, depth - 1, -beta, -alpha));
+        // Undo the move
+        _gameState.popState();
+        // alpha beta cut-off
+        alpha = std::max(alpha, bestVal);
         if (alpha >= beta) {
             break;
         }
-    };
+    }
     return bestVal;
 }
 
@@ -420,186 +386,3 @@ int Chess::negamax(std::string& state, int depth, int playerColor, int alpha, in
         }
     });
 }
-
-#pragma region Chess Piece Movement
-
-std::vector<BitMove> Chess::generateAllMoves(const std::string state, int playerColor)
-{
-    std::vector<BitMove> moves;
-    moves.reserve(32);
-    // need to implement friendly/unfriendly in bit so for now this hack
-
-    for (int i = 0; i < e_numBitboards; i++) {
-        _bitboards[i] = 0;
-    }
-
-    for (int i = 0; i < 64; i++) {
-        int bitIndex = _bitboardLookup[state[i]];
-        _bitboards[bitIndex] |= 1ULL << i;
-    }
-
-    _bitboards[WHITE_ALL_PIECES] = _bitboards[WHITE_PAWNS].getData() | 
-    _bitboards[WHITE_KNIGHTS].getData() | 
-    _bitboards[WHITE_BISHOPS].getData() | 
-    _bitboards[WHITE_ROOKS].getData() | 
-    _bitboards[WHITE_QUEENS].getData() | 
-    _bitboards[WHITE_KINGS].getData();
-
-    _bitboards[BLACK_ALL_PIECES] = _bitboards[BLACK_PAWNS].getData() | 
-    _bitboards[BLACK_KNIGHTS].getData() | 
-    _bitboards[BLACK_BISHOPS].getData() | 
-    _bitboards[BLACK_ROOKS].getData() | 
-    _bitboards[BLACK_QUEENS].getData() | 
-    _bitboards[BLACK_KINGS].getData();
-    
-    _bitboards[OCCUPANCY] = _bitboards[WHITE_ALL_PIECES].getData() | _bitboards[BLACK_ALL_PIECES].getData();
-
-    int bitIndex = currentPlayer == WHITE ? WHITE_PAWNS : BLACK_PAWNS; // can be used as offset to the _bitboards lookup index
-    int oppBitIndex = currentPlayer == WHITE ? BLACK_PAWNS : WHITE_PAWNS;
-
-    generateKnightMoves(moves, _bitboards[WHITE_KNIGHTS + bitIndex], ~_bitboards[WHITE_ALL_PIECES + bitIndex].getData());
-    generatePawnMoves(moves, _bitboards[WHITE_PAWNS + bitIndex], ~_bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + oppBitIndex], currentPlayer);
-    generateKingMoves(moves, _bitboards[WHITE_KINGS + bitIndex], ~_bitboards[WHITE_ALL_PIECES + bitIndex].getData());
-    generateBishopMoves(moves, _bitboards[WHITE_BISHOPS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
-    generateRookMoves(moves, _bitboards[WHITE_ROOKS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
-    generateQueenMoves(moves, _bitboards[WHITE_QUEENS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
-
-    return moves;
-}
-
-#pragma region Knight FX
-
-void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knightBoard, uint64_t empty_squares) {
-    knightBoard.forEachBit([&](int fromSquare) {
-        BitBoard moveBitboard = BitBoard(KnightAttacks[fromSquare] & empty_squares);
-        // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Knight);
-        });
-    });
-}
-
-#pragma endregion
-
-#pragma region Pawn FX
-
-void Chess::generatePawnMoves(std::vector<BitMove>& moves, BitBoard pawnBoard, BitBoard empty_squares, BitBoard enemyPieces, char color) 
-{
-    if (pawnBoard.getData() == 0) {  // no pawns
-        return;
-    }
-
-    // Calculate single moves
-    // shift bits LEFT to push white up the board. otherwise, shift bits RIGHT to push black down the board
-    BitBoard singleMoves = color == WHITE ? 
-    (pawnBoard.getData() << 8) & empty_squares.getData(): 
-    (pawnBoard.getData() >> 8) & empty_squares.getData();
-    // BitBoard(empty_squares.getData()).printBitboard();
-    // BitBoard(enemyPieces.getData()).printBitboard();
-
-    // Calculate double moves
-    /*only let pawns move forward if:
-    - (after a single move) pawns are on row 3 for white, row 6 for black
-    - after a single move, the next square is empty
-    */
-    BitBoard doubleMoves = color == WHITE ? 
-    ((singleMoves.getData() & Row3) << 8) & empty_squares.getData(): 
-    ((singleMoves.getData() & Row6) >> 8) & empty_squares.getData();
-
-    // Calculate left & right capturing
-    // can only capture when an enemy piece is present
-    // check left column. Ignore for pawns on column 1
-    BitBoard captureLeft = color == WHITE ? 
-    ((pawnBoard.getData() & NotCol1) << 7) & enemyPieces.getData():
-    ((pawnBoard.getData() & NotCol1) >> 9) & enemyPieces.getData();
-    // check right column. Ignore for pawns on column 8
-    BitBoard captureRight = color == WHITE ? 
-    ((pawnBoard.getData() & NotCol8) << 9) & enemyPieces.getData(): 
-    ((pawnBoard.getData() & NotCol8) >> 7) & enemyPieces.getData();
-
-    int shiftForward = (color == WHITE) ? 8 : -8;
-    int doubleShift = (color == WHITE) ? 16 : -16;
-    int captureLeftShift = (color == WHITE) ? 7 : -9;
-    int captureRightShift = (color == WHITE) ? 9 : -7;
-
-    // add single moves to list
-    addPawnBitBoardMoves(moves, singleMoves, shiftForward);
-    // add double moves to list
-    addPawnBitBoardMoves(moves, doubleMoves, doubleShift);
-    // add left captures to list
-    addPawnBitBoardMoves(moves, captureLeft, captureLeftShift);
-    // add right captures to list
-    addPawnBitBoardMoves(moves, captureRight, captureRightShift);
-}
-
-void Chess::addPawnBitBoardMoves(std::vector<BitMove>& moves, const BitBoard pawnMove, const int shift) {
-    if (pawnMove.getData() == 0) {
-        return;
-    }
-    BitBoard new_board(pawnMove);
-    pawnMove.forEachBit([&](int toSquare) {
-        int fromSquare = toSquare - shift;
-        moves.emplace_back(fromSquare, toSquare, Pawn);
-    });
-}
-
-#pragma endregion
-
-#pragma region King FX
-
-void Chess::generateKingMoves(std::vector<BitMove>& moves, BitBoard piecesBoard, uint64_t empty_squares) {
-    piecesBoard.forEachBit([&](int fromSquare) {
-        BitBoard moveBitboard = BitBoard(KingAttacks[fromSquare] & empty_squares);
-        // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, King);
-        });
-    });
-}
-
-#pragma endregion
-
-#pragma region Queen FX
-
-void Chess::generateQueenMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles){
-    bishopBoard.forEachBit([&](int fromSquare) {
-        BitBoard moveBitboard = BitBoard(getQueenAttacks(fromSquare, occupancy) & ~friend_tiles);
-        // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Queen);
-        });
-    });
-}
-
-#pragma endregion
-
-#pragma region Rook FX
-
-void Chess::generateRookMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles){
-    bishopBoard.forEachBit([&](int fromSquare) {
-        BitBoard moveBitboard = BitBoard(getRookAttacks(fromSquare, occupancy) & ~friend_tiles);
-        // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Rook);
-        });
-    });
-}
-
-#pragma endregion
-
-#pragma region Bishop FX
-
-
-void Chess::generateBishopMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friend_tiles){
-    bishopBoard.forEachBit([&](int fromSquare) {
-        BitBoard moveBitboard = BitBoard(getBishopAttacks(fromSquare, occupancy) & ~friend_tiles);
-        // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Bishop);
-        });
-    });
-}
-
-#pragma endregion
-
-#pragma endregion

@@ -165,15 +165,15 @@ inline BitBoard generatePieceAttackList(
             attacks |= KnightAttacks[fromSquare];
         }
         else if (PIECE_TYPE == Bishop) {
-            attacks |= BitBoard(getBishopAttacks(fromSquare, occupancy.getData())); 
+            attacks |= BitBoard(getBishopAttacks(fromSquare, occupancy.getData())).getData(); 
         }
         else if (PIECE_TYPE == Rook) {
-            attacks |= BitBoard(getRookAttacks(fromSquare, occupancy.getData())); 
+            attacks |= BitBoard(getRookAttacks(fromSquare, occupancy.getData())).getData(); 
         }
         else if (PIECE_TYPE == Queen) {
             // Queen is rook + bishop combined
-            attacks |= (BitBoard(getBishopAttacks(fromSquare, occupancy.getData())) |
-                        BitBoard(getRookAttacks(fromSquare, occupancy.getData())));
+            attacks |= (BitBoard(getBishopAttacks(fromSquare, occupancy.getData())).getData() |
+                        BitBoard(getRookAttacks(fromSquare, occupancy.getData())).getData());
         }
         else if (PIECE_TYPE == King) {
             attacks |= KingAttacks[fromSquare];
@@ -330,7 +330,7 @@ void GameState::filterOutIllegalMoves(std::vector<BitMove>& moves) {
 			currentKingSquare = move.to;
 		} else {
 			// If king didn't move, find him
-			currentKingSquare = tempBoards[myKingIdx].firstBit();
+			currentKingSquare = getFirstBit(tempBoards[myKingIdx].getData());
 		}
 
 		// If the King is attacked by the opponent after this move, the move is illegal.
@@ -373,7 +373,7 @@ std::vector<BitMove> GameState::generateAllMoves()
     generateRooksMoves(moves, _bitboards[WHITE_ROOKS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
     generateQueensMoves(moves, _bitboards[WHITE_QUEENS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
 
-    filterOutIllegalMoves(moves);
+    //filterOutIllegalMoves(moves);
 
     return moves;
 }

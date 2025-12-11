@@ -409,6 +409,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Bit.cpp" />
     <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\BitHolder.cpp" />
     <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Game.cpp" />
+    <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\GameState.cpp" />
     <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Sprite.cpp" />
     <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Square.cpp" />
     <ClCompile Include="C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\ChessSquare.cpp" />

@@ -7,6 +7,7 @@ C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\imgui\imgui.cpp;C:\Users
 C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Bit.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\Bit.obj
 C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\BitHolder.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\BitHolder.obj
 C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Game.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\Game.obj
+C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\GameState.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\GameState.obj
 C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Sprite.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\Sprite.obj
 C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\Square.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\Square.obj
 C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\classes\ChessSquare.cpp;C:\Users\ediso\Downloads\CS Classes\CMPM 123\chess-base\build\demo.dir\Release\ChessSquare.obj

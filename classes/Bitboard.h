@@ -88,19 +88,24 @@ private:
 
 };
 
-struct BitMove {
-    uint8_t from;
-    uint8_t to;
-    uint8_t piece;
-    
-    BitMove(int from, int to, ChessPiece piece)
-        : from(from), to(to), piece(piece) { }
+// implemented in GameState.h
+// #pragma pack(push, 1)
+// struct BitMove {
+//     unsigned char from;
+//     unsigned char to;
+//     unsigned char piece;
+//     unsigned char flags;
+
+//     BitMove(int from, int to, ChessPiece piece, int flags = 0)
+//         : from(from), to(to), piece(piece), flags(flags) { }
         
-    BitMove() : from(0), to(0), piece(NoPiece) { }
+//     BitMove() : from(0), to(0), piece(NoPiece), flags(0) { }
     
-    bool operator==(const BitMove& other) const {
-        return from == other.from && 
-               to == other.to && 
-               piece == other.piece;
-    }
-};
+//     bool operator==(const BitMove& other) const {
+//         return from == other.from && 
+//                to == other.to && 
+//                piece == other.piece &&
+//                flags == other.flags;
+//     }
+// };
+// #pragma pack(pop)
