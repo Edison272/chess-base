@@ -330,7 +330,7 @@ void GameState::filterOutIllegalMoves(std::vector<BitMove>& moves) {
 			currentKingSquare = move.to;
 		} else {
 			// If king didn't move, find him
-			currentKingSquare = getFirstBit(tempBoards[myKingIdx].getData());
+			currentKingSquare = tempBoards[myKingIdx].firstBit();
 		}
 
 		// If the King is attacked by the opponent after this move, the move is illegal.
@@ -373,7 +373,7 @@ std::vector<BitMove> GameState::generateAllMoves()
     generateRooksMoves(moves, _bitboards[WHITE_ROOKS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
     generateQueensMoves(moves, _bitboards[WHITE_QUEENS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
 
-    //filterOutIllegalMoves(moves);
+    filterOutIllegalMoves(moves);
 
     return moves;
 }

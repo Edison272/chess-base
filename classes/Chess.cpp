@@ -244,6 +244,7 @@ void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
     _gameState.init(stateString().c_str(), currentPlayer);
     _moves = _gameState.generateAllMoves();
     std::cout << _moves.size() << std::endl;
+    endTurn();
 }
 
 Player* Chess::checkForWinner()
@@ -274,8 +275,8 @@ std::string Chess::stateString()
 #pragma region Chess AI
 
 static std::map<char, int> _pieceValues = {  // scores are mapped to the indexes of AllBitBoards
-    {'P', 100}, {'N', 200}, {'B', 200}, {'R', 500}, {'Q', 1000}, {'K', 2000}, // white
-    {'p', -100}, {'n', -200}, {'b', -200}, {'r', -500}, {'q', -1000}, {'k', -2000},
+    {'P', 10}, {'N', 20}, {'B', 20}, {'R', 50}, {'Q', 100}, {'K', 200}, // white
+    {'p', -10}, {'n', -20}, {'b', -20}, {'r', -50}, {'q', -100}, {'k', -200},
     {'0', 0}
 };
 
@@ -287,7 +288,7 @@ int Chess::evaluateBoard(const GameState& gameState)
         const unsigned char piece = gameState.state[square];
         const int index = _bitboardLookup[gameState.state[square]];
         score += _pieceValues[piece];
-        score += pieceSquareTables[index][square];
+        score += pieceSquareTables[index][square]*_gameState.color;
 
     }
     return score;
@@ -302,7 +303,7 @@ void Chess::updateAI() {
     // Moves Per Second (MPS) counting
     const auto searchStart = std::chrono::steady_clock::now();
     _countMoves = 0;
-
+    std::cout << "alive" << std::endl;
     for (auto move: _moves) {
         // modify state string to "move" piece
         char dstPce = state[move.to];

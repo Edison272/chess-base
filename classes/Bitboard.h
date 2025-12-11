@@ -56,6 +56,10 @@ class BitBoard {
         return *this;
     }
 
+    int firstBit() {
+        return bitScanForward(_data);
+    }
+
     void printBitboard() {
         std::cout << "\n  a b c d e f g h\n";
         for (int rank = 7; rank >= 0; rank--) {
