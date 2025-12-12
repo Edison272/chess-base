@@ -272,6 +272,20 @@ std::string Chess::stateString()
     );
     return s;}
 
+void Chess::setStateString(const std::string &s)
+{
+    std::cout << "setting state string" << std::endl;
+    _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
+        int index = y * 8 + x;
+        char playerNumber = s[index] - '0';
+        if (playerNumber) {
+            square->setBit(PieceForPlayer(playerNumber - 1, Pawn));
+        } else {
+            square->setBit(nullptr);
+        }
+    });
+}
+
 #pragma region Chess AI
 
 static std::map<char, int> _pieceValues = {  // scores are mapped to the indexes of AllBitBoards
@@ -283,12 +297,11 @@ static std::map<char, int> _pieceValues = {  // scores are mapped to the indexes
 int Chess::evaluateBoard(const GameState& gameState) 
 {
     int score = 0;
-    int square = 0;
     for (int square = 0; square < 64; ++square) {
         const unsigned char piece = gameState.state[square];
         const int index = _bitboardLookup[gameState.state[square]];
         score += _pieceValues[piece];
-        score += pieceSquareTables[index][square]*_gameState.color;
+        //score += pieceSquareTables[index][square]*_gameState.color;
 
     }
     return score;
@@ -298,23 +311,17 @@ void Chess::updateAI() {
     // NEGAMAX ALGORITHM
     int bestVal = -MILLY;
     BitMove bestMove;
-    std::string state = stateString();
 
     // Moves Per Second (MPS) counting
     const auto searchStart = std::chrono::steady_clock::now();
     _countMoves = 0;
-    std::cout << "alive" << std::endl;
-    for (auto move: _moves) {
-        // modify state string to "move" piece
-        char dstPce = state[move.to];
-        char srcPce = state[move.from];
-        state[move.to] = srcPce;
-        state[move.from] = '0';
 
-        int moveVal = -negamax(_gameState, MAX_DEPTH, -MILLY, MILLY);
-        // Undo move
-        state[move.to] = dstPce;
-        state[move.from] = srcPce;
+    for (const auto& move: _moves) {
+        // choose a possible move
+        _gameState.pushMove(move);
+        int moveVal = -negamax(_gameState, MAX_DEPTH-1, -MILLY, MILLY);
+        // Undo the move
+        _gameState.popState();
 
         if (moveVal > bestVal) {
             bestMove = move;
@@ -343,13 +350,14 @@ void Chess::updateAI() {
 
 int Chess::negamax(GameState& gamestate, int depth, int alpha, int beta) {
     _countMoves++;
+    std::cout << depth << ", stack int: " << gamestate.stackPtr  << std::endl;
     //max depth
     if (depth == 0) {
         return evaluateBoard(gamestate);
     }
     
     // get new moves based on new state
-    auto newMoves = _gameState.generateAllMoves();
+    auto newMoves = gamestate.generateAllMoves();
 
     // return board eval if there's no other moves
     if (newMoves.size() == 0) {
@@ -359,10 +367,12 @@ int Chess::negamax(GameState& gamestate, int depth, int alpha, int beta) {
     int bestVal = -MILLY;
     // branch out into the next possible board outcomes 
     for(const auto& move : newMoves) {
-        _gameState.pushMove(move);
-        bestVal = std::max(bestVal, -negamax(_gameState, depth - 1, -beta, -alpha));
+        gamestate.pushMove(move);
+        std::cout << depth << ", new -> stack int: " << gamestate.stackPtr  << std::endl;
+        bestVal = std::max(bestVal, -negamax(gamestate, depth - 1, -beta, -alpha));
+        std::cout << depth << ", return -> stack int: " << gamestate.stackPtr  << std::endl;
         // Undo the move
-        _gameState.popState();
+        gamestate.popState();
         // alpha beta cut-off
         alpha = std::max(alpha, bestVal);
         if (alpha >= beta) {
@@ -373,17 +383,3 @@ int Chess::negamax(GameState& gamestate, int depth, int alpha, int beta) {
 }
 
 #pragma endregion
-
-    void Chess::setStateString(const std::string &s)
-{
-    std::cout << "setting state string" << std::endl;
-    _grid->forEachSquare([&](ChessSquare* square, int x, int y) {
-        int index = y * 8 + x;
-        char playerNumber = s[index] - '0';
-        if (playerNumber) {
-            square->setBit(PieceForPlayer(playerNumber - 1, Pawn));
-        } else {
-            square->setBit(nullptr);
-        }
-    });
-}
