@@ -4,14 +4,16 @@ I spent the longest amount of time on building the chest game, simply because of
 
 Making the Negamax AI
 
-I was somewhat worried about implenting the Negamax Algorithm, but it turned out to be a pretty simple process. Be it TicTacToe, ConnectFour, or Chess, the fundementals of the Negamax algorithm (with AB pruning) remain the same. It only took me a couple hours to create a "functioning" Negamax AI by copying my Negamax algorithm from my Connect 4 AI, and adapting the Algorithm to use the bitboards system which the Chess Game runs on. The reason I say "functioning" is because the Negamax AI wasn't very smart- the AI's performance hinges entirely on its ability to evaluate the board state (evaluateBoard()), which currently only looks for material advantages. Checking for ONLY material without any sense of self preservation or development means the AI can be easily be led into traps, or sometimes make wildly unfavorable moves just to capture a piece.
+I was somewhat worried about implenting the Negamax Algorithm, but it turned out to be a pretty simple process. Be it TicTacToe, ConnectFour, or Chess, the fundementals of the Negamax algorithm (with AB pruning) remain the same. It only took me a couple hours to create a "functioning" Negamax AI by copying my Negamax algorithm from my Connect 4 AI, and adapting the Algorithm to use the bitboards system which the Chess Game runs on. The reason I say "functioning" is because the Negamax AI wasn't very smart- the AI's performance hinges entirely on its ability to evaluate the board state (evaluateBoard()), which currently only looks for material advantages and ideal positioning of pieces. It's certainly not the worst AI- It makes sure to keep its pieces room to move, and also takes captures when they are advantagious for both material AND position. However, there will be some instances where it will make the questionable material trade (or maybe I just don't see what it's cooking), or will keep doing and undoing a move over and over again (tends to happen in AI vs AI battles).
 
-The AI Currently Operates at a Depth of 6 without any wait time, and plays incredibly aggresively. Although the game gives the option to set both players to AI it is HIGHLY UNRECOMMENDED- the AI do not wait for the animations to finish before making their move, so AI vs AI matches are often just a blur of pieces until nothing is left.
+I was later able to incorporate Professor Graeme's GameState code into my game code, which essentially switches out the use of a string to track the board's state with a custom class. This makes it possible to check for much more stuff within the game, but the added complexity has also set back the algorithm's "instant-move" recursion depth from 6 to 4, though the AI is now capable of Check and Checkmate.
+
+The AI Currently Operates at a Depth of 4 without any wait time, and plays incredibly aggresively. Although the game gives the option to set both players to AI it is HIGHLY UNRECOMMENDED- the AI do not wait for the animations to finish before making their move, so AI vs AI matches are often just a blur of pieces until nothing is left.
 
 Performance Optimization
 
 Excluding the use of Bitboards instead of a tile system as a more efficient way of detecting tile position, I tried to optimize my codei in the areas where the normal game loop and negamax recursion loop would access the most, namely the generateBoards() and evaluateBoard() function. The general approach I had to optimization was to reduce the amount of brancing and temporary memory allocation the program uses to get the job done, which meant reducing the usage of if statements (having a more direct approach of accessing data when possible), and declaring and defining certain Arrays & values at the beginning of the program, rather than declaring and defining them every time they're called in the script.
 
-"Aggro" Depth 6 Materialistic Evaluation AI in Action:
+"Smart" Depth 4 GameState AI in Action:
 (Video Link)
-https://drive.google.com/file/d/1Iwu0Pb_sNE_AzgoDXA77w4MskrkNVUty/view?usp=sharing
+https://drive.google.com/file/d/18sciizJ-ewQcvyqmoaYH-698JdVOMa2e/view?usp=sharing
