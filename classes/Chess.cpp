@@ -301,7 +301,7 @@ int Chess::evaluateBoard(const GameState& gameState)
         const unsigned char piece = gameState.state[square];
         const int index = _bitboardLookup[gameState.state[square]];
         score += _pieceValues[piece];
-        //score += pieceSquareTables[index][square]*_gameState.color;
+        score += pieceSquareTables[index][square];
 
     }
     return score;
@@ -319,7 +319,7 @@ void Chess::updateAI() {
     for (const auto& move: _moves) {
         // choose a possible move
         _gameState.pushMove(move);
-        int moveVal = -negamax(_gameState, MAX_DEPTH-1, -MILLY, MILLY);
+        int moveVal = -negamax(_gameState, 4, -MILLY, MILLY);
         // Undo the move
         _gameState.popState();
 
@@ -350,7 +350,6 @@ void Chess::updateAI() {
 
 int Chess::negamax(GameState& gamestate, int depth, int alpha, int beta) {
     _countMoves++;
-    std::cout << depth << ", stack int: " << gamestate.stackPtr  << std::endl;
     //max depth
     if (depth == 0) {
         return evaluateBoard(gamestate);
@@ -368,9 +367,7 @@ int Chess::negamax(GameState& gamestate, int depth, int alpha, int beta) {
     // branch out into the next possible board outcomes 
     for(const auto& move : newMoves) {
         gamestate.pushMove(move);
-        std::cout << depth << ", new -> stack int: " << gamestate.stackPtr  << std::endl;
         bestVal = std::max(bestVal, -negamax(gamestate, depth - 1, -beta, -alpha));
-        std::cout << depth << ", return -> stack int: " << gamestate.stackPtr  << std::endl;
         // Undo the move
         gamestate.popState();
         // alpha beta cut-off

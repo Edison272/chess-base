@@ -11,7 +11,7 @@
 constexpr int WHITE = +1;
 constexpr int BLACK = -1;
 // Define a constant for the maximum depth of your AI.
-constexpr int MAX_DEPTH = 3;
+constexpr int MAX_DEPTH = 24;
 // Define constants for ranks and files
 constexpr uint64_t NotAFile(0xFEFEFEFEFEFEFEFEULL); // A file mask
 constexpr uint64_t NotHFile(0x7F7F7F7F7F7F7F7FULL); // H file mask
